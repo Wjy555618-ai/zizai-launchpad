@@ -316,7 +316,9 @@ struct RootView: View {
             ViewModeSwitcher(
                 selection: Binding(
                     get: { activeLayoutMode },
-                    set: activateLayoutMode
+                    set: { mode in
+                        activateLayoutMode(mode)
+                    }
                 )
             )
             .opacity(isSearchPresented ? 0 : 1)
