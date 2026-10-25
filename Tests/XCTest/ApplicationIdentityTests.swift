@@ -4,6 +4,42 @@ import XCTest
 @testable import 自在启动台
 
 final class ApplicationIdentityTests: XCTestCase {
+    func testLaunchConfigurationKeepsUnitAndUITestHostsDisjoint() {
+        let unitConfiguration = ZizaiLaunchConfiguration.current(
+            environment: [ZizaiLaunchConfiguration.unitTestingEnvironmentKey: "1"]
+        )
+        XCTAssertEqual(unitConfiguration.mode, .unitTestHost)
+        XCTAssertEqual(unitConfiguration.applications, [])
+        XCTAssertNotNil(unitConfiguration.stateDirectory)
+
+        let uiConfiguration = ZizaiLaunchConfiguration.current(
+            environment: [
+                ZizaiLaunchConfiguration.uiTestingEnvironmentKey: "1",
+                ZizaiLaunchConfiguration.uiTestSessionEnvironmentKey: "launch-mode-test",
+            ]
+        )
+        XCTAssertEqual(uiConfiguration.mode, .uiTesting)
+        XCTAssertEqual(uiConfiguration.applications, ZizaiLaunchConfiguration.fixtureApplications)
+
+        let inheritedTestActionConfiguration = ZizaiLaunchConfiguration.current(
+            environment: [
+                ZizaiLaunchConfiguration.unitTestingEnvironmentKey: "1",
+                ZizaiLaunchConfiguration.uiTestingEnvironmentKey: "1",
+                ZizaiLaunchConfiguration.uiTestSessionEnvironmentKey: "launch-mode-precedence-test",
+            ]
+        )
+        XCTAssertEqual(inheritedTestActionConfiguration.mode, .uiTesting)
+        XCTAssertEqual(
+            inheritedTestActionConfiguration.applications,
+            ZizaiLaunchConfiguration.fixtureApplications
+        )
+
+        let productionConfiguration = ZizaiLaunchConfiguration.current(environment: [:])
+        XCTAssertEqual(productionConfiguration.mode, .production)
+        XCTAssertNil(productionConfiguration.applications)
+        XCTAssertNil(productionConfiguration.stateDirectory)
+    }
+
     func testDisplayNameFallsBackWhenLocalizedMetadataIsBlank() {
         let name = AppScanner.preferredDisplayName(
             localizedInfo: ["CFBundleDisplayName": " \n\t "],

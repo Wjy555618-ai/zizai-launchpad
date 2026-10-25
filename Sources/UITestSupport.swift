@@ -51,47 +51,83 @@ enum ZizaiAccessibilityID {
     }
 }
 
-/// End-to-end tests launch the real application with deterministic local data
-/// and isolated persistence. Production launches never enter this path.
+/// Keeps production, unit-test-host and end-to-end launches on explicit,
+/// non-overlapping paths. Unit tests need the application executable as their
+/// bundle loader, but must not start the product's scanning and presentation
+/// lifecycle before XCTest attaches. UI tests still launch the complete product
+/// with deterministic local data and isolated persistence.
+enum ZizaiLaunchMode: Equatable {
+    case production
+    case unitTestHost
+    case uiTesting
+}
+
 struct ZizaiLaunchConfiguration {
+    static let unitTestingEnvironmentKey = "ZIZAI_UNIT_TEST_HOST"
     static let uiTestingEnvironmentKey = "ZIZAI_UI_TESTING"
     static let uiTestSessionEnvironmentKey = "ZIZAI_UI_TEST_SESSION"
     static let uiTestResetEnvironmentKey = "ZIZAI_UI_TEST_RESET"
 
-    let isUITesting: Bool
+    let mode: ZizaiLaunchMode
     let stateDirectory: URL?
     let applications: [AppInfo]?
 
     static func current(
         environment: [String: String] = ProcessInfo.processInfo.environment
     ) -> ZizaiLaunchConfiguration {
+        switch launchMode(environment: environment) {
+        case .unitTestHost:
+            let directory = FileManager.default.temporaryDirectory
+                .appendingPathComponent(
+                    "自在启动台-XCTestHost-\(ProcessInfo.processInfo.processIdentifier)",
+                    isDirectory: true
+                )
+            return ZizaiLaunchConfiguration(
+                mode: .unitTestHost,
+                stateDirectory: directory,
+                applications: []
+            )
+        case .uiTesting:
+            let session = sanitizedSession(
+                environment[uiTestSessionEnvironmentKey] ?? UUID().uuidString
+            )
+            let directory = FileManager.default.temporaryDirectory
+                .appendingPathComponent("自在启动台-UI测试", isDirectory: true)
+                .appendingPathComponent(session, isDirectory: true)
+            pruneTestStateDirectories(keeping: directory)
+            prepareStateDirectory(
+                directory,
+                reset: environment[uiTestResetEnvironmentKey] != "0"
+            )
+            return ZizaiLaunchConfiguration(
+                mode: .uiTesting,
+                stateDirectory: directory,
+                applications: fixtureApplications
+            )
+        case .production:
+            return ZizaiLaunchConfiguration(
+                mode: .production,
+                stateDirectory: nil,
+                applications: nil
+            )
+        }
+    }
+
+    /// UI testing takes precedence if Xcode propagates both test-action and
+    /// app-launch environments. The explicit UI marker is the stronger
+    /// contract: it must always launch the complete product surface.
+    static func launchMode(
+        environment: [String: String] = ProcessInfo.processInfo.environment
+    ) -> ZizaiLaunchMode {
         #if DEBUG
             if environment[uiTestingEnvironmentKey] == "1" {
-                let session = sanitizedSession(
-                    environment[uiTestSessionEnvironmentKey] ?? UUID().uuidString
-                )
-                let directory = FileManager.default.temporaryDirectory
-                    .appendingPathComponent("自在启动台-UI测试", isDirectory: true)
-                    .appendingPathComponent(session, isDirectory: true)
-                pruneTestStateDirectories(keeping: directory)
-                prepareStateDirectory(
-                    directory,
-                    reset: environment[uiTestResetEnvironmentKey] != "0"
-                )
-
-                return ZizaiLaunchConfiguration(
-                    isUITesting: true,
-                    stateDirectory: directory,
-                    applications: fixtureApplications
-                )
+                return .uiTesting
+            }
+            if environment[unitTestingEnvironmentKey] == "1" {
+                return .unitTestHost
             }
         #endif
-
-        return ZizaiLaunchConfiguration(
-            isUITesting: false,
-            stateDirectory: nil,
-            applications: nil
-        )
+        return .production
     }
 
     private static func prepareStateDirectory(_ directory: URL, reset: Bool) {

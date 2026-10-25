@@ -8,6 +8,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var presentationGeneration = 0
 
     func applicationWillFinishLaunching(_ notification: Notification) {
+        guard ZizaiLaunchConfiguration.launchMode() != .unitTestHost else {
+            NSApplication.shared.setActivationPolicy(.accessory)
+            return
+        }
         let isLoginItemLaunch = LoginItemLaunchDetector.isLoginItemLaunch()
         presentationState = LaunchPresentationState(isLoginItemLaunch: isLoginItemLaunch)
         // A login item is background preparation, not a visible app launch.
@@ -22,19 +26,23 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        guard ZizaiLaunchConfiguration.launchMode() != .unitTestHost else { return }
         perform(presentationState.applicationDidFinishLaunching())
     }
 
     func applicationDidBecomeActive(_ notification: Notification) {
+        guard ZizaiLaunchConfiguration.launchMode() != .unitTestHost else { return }
         perform(presentationState.applicationDidBecomeActive())
     }
 
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
+        guard ZizaiLaunchConfiguration.launchMode() != .unitTestHost else { return false }
         perform(presentationState.userRequestedPresentation())
         return true
     }
 
     func applicationDidUnhide(_ notification: Notification) {
+        guard ZizaiLaunchConfiguration.launchMode() != .unitTestHost else { return }
         guard presentationState.isSilentLoginLaunch else { return }
         perform(presentationState.userRequestedPresentation())
     }
