@@ -1,10 +1,9 @@
 import AppKit
 import SwiftUI
 
-@main
 @MainActor
 enum TooltipLayeringAudit {
-    static func main() {
+    static func run() {
         NSApplication.shared.setActivationPolicy(.accessory)
 
         let window = NSWindow(

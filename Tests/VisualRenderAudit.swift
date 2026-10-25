@@ -1,15 +1,14 @@
 import AppKit
 import SwiftUI
 
-@main
 @MainActor
 enum VisualRenderAudit {
-    static func main() {
+    static func run(arguments: [String]) {
         let output =
-            CommandLine.arguments.dropFirst().first
+            arguments.first
             ?? "/tmp/zizai-visual-audit.png"
-        let layoutArgument = CommandLine.arguments.dropFirst(2).first ?? "space"
-        let appearanceArgument = CommandLine.arguments.dropFirst(3).first ?? "dark"
+        let layoutArgument = arguments.dropFirst().first ?? "space"
+        let appearanceArgument = arguments.dropFirst(2).first ?? "dark"
         let auditColorScheme: ColorScheme = appearanceArgument == "light" ? .light : .dark
         let auditAppearance = NSAppearance(
             named: appearanceArgument == "light" ? .aqua : .darkAqua
@@ -160,6 +159,11 @@ enum VisualRenderAudit {
             defer: false
         )
         window.appearance = initialAppearance
+        // Off-screen evidence must not depend on the operator's current
+        // pointer position. Without this, AppKit tracking areas can activate a
+        // random tile's hover state while the borderless window is settling.
+        window.ignoresMouseEvents = true
+        window.acceptsMouseMovedEvents = false
         window.contentView = hosting
         RootWindowMaterial.install(in: window)
         window.orderBack(nil)
@@ -176,7 +180,12 @@ enum VisualRenderAudit {
         }
         if layoutArgument == "search" || layoutArgument == "storeSearch" {
             store.searchText = "原型"
-            store.requestFocusSearch()
+            if layoutArgument == "search" {
+                // The general visual matrix covers the focused search field.
+                // Store artwork intentionally avoids a blinking insertion
+                // point so consecutive exports represent the same frame.
+                store.requestFocusSearch()
+            }
         }
         validateStoreComposition(store, layoutArgument: layoutArgument)
         RunLoop.current.run(until: Date().addingTimeInterval(0.5))
@@ -185,9 +194,29 @@ enum VisualRenderAudit {
         }
         captureView.displayIfNeeded()
 
-        guard let bitmap = captureView.bitmapImageRepForCachingDisplay(in: captureView.bounds) else {
-            fail("无法创建离屏界面画布")
+        // A fixed 2×, 8-bit RGB target prevents snapshot evidence from
+        // inheriting the current monitor's backing scale or Display P3
+        // conversion path. App Store and CI renders therefore share one
+        // reproducible pixel contract.
+        let captureScale: CGFloat = 2
+        guard
+            let bitmap = NSBitmapImageRep(
+                bitmapDataPlanes: nil,
+                pixelsWide: Int(captureView.bounds.width * captureScale),
+                pixelsHigh: Int(captureView.bounds.height * captureScale),
+                bitsPerSample: 8,
+                samplesPerPixel: 4,
+                hasAlpha: true,
+                isPlanar: false,
+                colorSpaceName: .deviceRGB,
+                bitmapFormat: [],
+                bytesPerRow: 0,
+                bitsPerPixel: 0
+            )
+        else {
+            fail("无法创建固定 2× sRGB 离屏界面画布")
         }
+        bitmap.size = captureView.bounds.size
         captureView.cacheDisplay(in: captureView.bounds, to: bitmap)
         guard let data = bitmap.representation(using: .png, properties: [:]) else {
             fail("无法编码界面快照")
@@ -219,7 +248,7 @@ enum VisualRenderAudit {
                     ("灵感笔记", "lightbulb.max.fill", "收集想法"),
                     ("创意画板", "paintpalette.fill", "视觉创作"),
                     ("影像剪辑", "scissors", "编辑视频"),
-                    ("原型工坊", "square.on.square", "制作原型"),
+                    ("原型工坊", "square.grid.2x2.fill", "制作原型"),
                     ("色彩助手", "eyedropper.halffull", "管理色彩"),
                     ("字体实验", "textformat", "字体设计"),
                     ("动效台", "sparkles", "创作动效"),
@@ -290,14 +319,14 @@ enum VisualRenderAudit {
             ),
         ]
         let palette = [
-            Color(red: 0.35, green: 0.38, blue: 0.95),
-            Color(red: 0.78, green: 0.30, blue: 0.82),
-            Color(red: 0.96, green: 0.33, blue: 0.41),
-            Color(red: 0.17, green: 0.72, blue: 0.49),
-            Color(red: 0.15, green: 0.57, blue: 0.92),
-            Color(red: 0.96, green: 0.62, blue: 0.18),
-            Color(red: 0.26, green: 0.66, blue: 0.78),
-            Color(red: 0.46, green: 0.50, blue: 0.58),
+            NSColor(srgbRed: 0.35, green: 0.38, blue: 0.95, alpha: 1),
+            NSColor(srgbRed: 0.78, green: 0.30, blue: 0.82, alpha: 1),
+            NSColor(srgbRed: 0.96, green: 0.33, blue: 0.41, alpha: 1),
+            NSColor(srgbRed: 0.17, green: 0.72, blue: 0.49, alpha: 1),
+            NSColor(srgbRed: 0.15, green: 0.57, blue: 0.92, alpha: 1),
+            NSColor(srgbRed: 0.96, green: 0.62, blue: 0.18, alpha: 1),
+            NSColor(srgbRed: 0.26, green: 0.66, blue: 0.78, alpha: 1),
+            NSColor(srgbRed: 0.46, green: 0.50, blue: 0.58, alpha: 1),
         ]
         let specifications = groups.flatMap { group, definitions in
             definitions.map { (group: group, definition: $0) }
@@ -326,7 +355,7 @@ enum VisualRenderAudit {
             IconCache.shared.registerFixtureIcon(
                 visualFixtureIcon(
                     symbol: "square.stack.3d.up.fill",
-                    color: Color(red: 0.38, green: 0.42, blue: 0.96)
+                    color: NSColor(srgbRed: 0.38, green: 0.42, blue: 0.96, alpha: 1)
                 ),
                 for: previewPath
             )
@@ -385,27 +414,90 @@ enum VisualRenderAudit {
         }
     }
 
-    private static func visualFixtureIcon(symbol: String, color: Color) -> NSImage {
-        let renderer = ImageRenderer(
-            content:
-                ZStack {
-                    RoundedRectangle(cornerRadius: 34, style: .continuous)
-                        .fill(
-                            LinearGradient(
-                                colors: [color.opacity(0.78), color],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
-                    Image(systemName: symbol)
-                        .font(.system(size: 66, weight: .medium))
-                        .symbolRenderingMode(.monochrome)
-                        .foregroundStyle(.white)
-                }
-                .frame(width: 160, height: 160)
+    private static func visualFixtureIcon(symbol: String, color: NSColor) -> NSImage {
+        let pixels = 320
+        guard
+            let bitmap = NSBitmapImageRep(
+                bitmapDataPlanes: nil,
+                pixelsWide: pixels,
+                pixelsHigh: pixels,
+                bitsPerSample: 8,
+                samplesPerPixel: 4,
+                hasAlpha: true,
+                isPlanar: false,
+                colorSpaceName: .deviceRGB,
+                bitmapFormat: [],
+                bytesPerRow: 0,
+                bitsPerPixel: 0
+            ),
+            let graphics = NSGraphicsContext(bitmapImageRep: bitmap),
+            let colorSpace = CGColorSpace(name: CGColorSpace.sRGB),
+            let gradient = CGGradient(
+                colorsSpace: colorSpace,
+                colors: [color.withAlphaComponent(0.78).cgColor, color.cgColor] as CFArray,
+                locations: [0, 1]
+            ),
+            let baseSymbol = NSImage(systemSymbolName: symbol, accessibilityDescription: nil),
+            let configuredSymbol = baseSymbol.withSymbolConfiguration(
+                NSImage.SymbolConfiguration(pointSize: 132, weight: .medium)
+            )
+        else {
+            fail("无法创建视觉验收图标：\(symbol)")
+        }
+
+        NSGraphicsContext.saveGraphicsState()
+        NSGraphicsContext.current = graphics
+        let context = graphics.cgContext
+        context.setShouldAntialias(true)
+        context.interpolationQuality = .high
+        let dimension = CGFloat(pixels)
+        let bounds = CGRect(x: 0, y: 0, width: dimension, height: dimension)
+        let background = CGPath(
+            roundedRect: bounds,
+            cornerWidth: 68,
+            cornerHeight: 68,
+            transform: nil
         )
-        renderer.scale = 2
-        return renderer.nsImage ?? NSImage(size: NSSize(width: 160, height: 160))
+        context.saveGState()
+        context.addPath(background)
+        context.clip()
+        context.drawLinearGradient(
+            gradient,
+            start: CGPoint(x: 0, y: dimension),
+            end: CGPoint(x: dimension, y: 0),
+            options: []
+        )
+        context.restoreGState()
+
+        var proposedRect = CGRect(origin: .zero, size: configuredSymbol.size)
+        guard
+            let symbolImage = configuredSymbol.cgImage(
+                forProposedRect: &proposedRect,
+                context: graphics,
+                hints: nil
+            )
+        else {
+            NSGraphicsContext.restoreGraphicsState()
+            fail("无法栅格化视觉验收符号：\(symbol)")
+        }
+        let symbolExtent = CGFloat(132)
+        let target = CGRect(
+            x: (dimension - symbolExtent) / 2,
+            y: (dimension - symbolExtent) / 2,
+            width: symbolExtent,
+            height: symbolExtent
+        )
+        context.saveGState()
+        context.clip(to: target, mask: symbolImage)
+        context.setFillColor(NSColor.white.cgColor)
+        context.fill(target)
+        context.restoreGState()
+        NSGraphicsContext.restoreGraphicsState()
+
+        bitmap.size = NSSize(width: 160, height: 160)
+        let image = NSImage(size: bitmap.size)
+        image.addRepresentation(bitmap)
+        return image
     }
 
     /// A screenshot is useful evidence only when critical chrome has visible

@@ -2,10 +2,9 @@ import AppKit
 import Combine
 import Foundation
 
-@main
 @MainActor
 enum CanvasInteractionPerformanceAudit {
-    static func main() {
+    static func run() {
         let stateDirectory = FileManager.default.temporaryDirectory
             .appendingPathComponent("zizai-canvas-performance-audit-\(UUID().uuidString)", isDirectory: true)
         defer { try? FileManager.default.removeItem(at: stateDirectory) }

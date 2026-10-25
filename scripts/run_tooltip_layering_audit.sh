@@ -3,22 +3,6 @@ set -euo pipefail
 
 PROJECT_DIR="${0:A:h:h}"
 ARTIFACT_DIR="${ZIZAI_BUILD_DIR:-$PROJECT_DIR/.artifacts.noindex}"
-source "$PROJECT_DIR/scripts/audit_toolchain.zsh"
-TEST_BINARY="$ARTIFACT_DIR/TooltipLayeringAudit-$ZIZAI_AUDIT_ARCH"
-source "$PROJECT_DIR/scripts/audit_source_manifest.zsh"
+source "$PROJECT_DIR/scripts/ui_runtime_audit_harness.zsh"
 
-mkdir -p "$ARTIFACT_DIR"
-
-"$ZIZAI_SWIFTC" \
-  -sdk "$ZIZAI_SDK" \
-  -target "$ZIZAI_AUDIT_TARGET" \
-  -O \
-  -warnings-as-errors \
-  -framework AppKit \
-  -framework SwiftUI \
-  -framework Combine \
-  "${ZIZAI_AUDIT_SOURCE_FILES[@]}" \
-  "$PROJECT_DIR/Tests/TooltipLayeringAudit.swift" \
-  -o "$TEST_BINARY"
-
-zizai_run_audit_binary "$TEST_BINARY"
+zizai_run_ui_runtime_audit tooltip

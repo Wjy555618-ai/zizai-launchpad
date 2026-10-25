@@ -18,18 +18,27 @@ SOURCES = ROOT / "Sources"
 PROJECT = ROOT / "自在启动台.xcodeproj" / "project.pbxproj"
 MANIFEST = ROOT / "scripts" / "audit_source_manifest.zsh"
 AUDIT_TOOLCHAIN = ROOT / "scripts" / "audit_toolchain.zsh"
+UI_RUNTIME_HARNESS = ROOT / "scripts" / "ui_runtime_audit_harness.zsh"
+RELEASE_GATE = ROOT / "scripts" / "verify_release.sh"
+RELEASE_CORE = ROOT / "scripts" / "verify_release_core.sh"
+RELEASE_RUNTIME = ROOT / "scripts" / "verify_release_runtime.sh"
+VISUAL_REPRODUCIBILITY = ROOT / "scripts" / "verify_visual_reproducibility.sh"
+QUALITY_WORKFLOW = ROOT / ".github" / "workflows" / "quality.yml"
 
-AUDIT_RUNNERS = (
+NATIVE_AUDIT_RUNNERS = (
     "run_interaction_tests.sh",
     "run_store_behavior_audit.sh",
     "run_async_work_performance_audit.sh",
-    "run_canvas_interaction_performance_audit.sh",
-    "run_tab_content_performance_audit.sh",
     "run_tab_switch_performance_audit.sh",
-    "run_tooltip_layering_audit.sh",
-    "run_visual_render_audit.sh",
     "run_scanner_audit.sh",
     "run_login_item_audit.sh",
+)
+
+UI_RUNTIME_AUDIT_RUNNERS = (
+    "run_canvas_interaction_performance_audit.sh",
+    "run_tab_content_performance_audit.sh",
+    "run_tooltip_layering_audit.sh",
+    "run_visual_render_audit.sh",
 )
 
 STORE_MODULE_LIMITS = {
@@ -90,7 +99,7 @@ def main() -> None:
     toolchain = AUDIT_TOOLCHAIN.read_text(encoding="utf-8")
     if 'ZIZAI_AUDIT_ARCH="${ZIZAI_AUDIT_ARCH:-$ZIZAI_HOST_ARCH}"' not in toolchain:
         fail("独立审计没有默认跟随当前主机架构")
-    for runner_name in AUDIT_RUNNERS:
+    for runner_name in NATIVE_AUDIT_RUNNERS:
         runner = (ROOT / "scripts" / runner_name).read_text(encoding="utf-8")
         if 'source "$PROJECT_DIR/scripts/audit_toolchain.zsh"' not in runner:
             fail(f"{runner_name} 绕过共享审计工具链")
@@ -99,9 +108,54 @@ def main() -> None:
         if "zizai_run_audit_binary" not in runner:
             fail(f"{runner_name} 没有通过共享架构执行器启动产物")
 
+    ui_harness = UI_RUNTIME_HARNESS.read_text(encoding="utf-8")
+    if 'source "$PROJECT_DIR/scripts/audit_toolchain.zsh"' not in ui_harness:
+        fail("界面运行时审计绕过共享架构工具链")
+    if '"${ZIZAI_AUDIT_SOURCE_FILES[@]}"' not in ui_harness:
+        fail("界面运行时审计没有编译统一产品源图")
+    if "zizai_run_audit_binary" not in ui_harness:
+        fail("界面运行时审计没有通过共享架构执行器启动")
+    for runner_name in UI_RUNTIME_AUDIT_RUNNERS:
+        runner = (ROOT / "scripts" / runner_name).read_text(encoding="utf-8")
+        if 'source "$PROJECT_DIR/scripts/ui_runtime_audit_harness.zsh"' not in runner:
+            fail(f"{runner_name} 绕过统一界面运行时审计")
+        if "ZIZAI_SWIFTC" in runner or "ZIZAI_AUDIT_SOURCE_FILES" in runner:
+            fail(f"{runner_name} 重复编译了完整 SwiftUI 产品源图")
+        if "zizai_run_ui_runtime_audit" not in runner:
+            fail(f"{runner_name} 没有通过统一界面运行时入口执行")
+
+    release_gate = RELEASE_GATE.read_text(encoding="utf-8")
+    if "verify_release_core.sh" not in release_gate or "verify_release_runtime.sh" not in release_gate:
+        fail("发布总门槛没有统一编排 core/runtime 职责阶段")
+    release_core = RELEASE_CORE.read_text(encoding="utf-8")
+    release_runtime = RELEASE_RUNTIME.read_text(encoding="utf-8")
+    if "run_ui_tests.sh" not in release_core or "run_architecture_audit.sh" not in release_core:
+        fail("core 阶段没有独占构建、XCUITest 编译和产物架构责任")
+    for required_runner in (
+        "run_interaction_tests.sh",
+        "run_accessibility_render_audit.sh",
+        "verify_visual_reproducibility.sh",
+        "verify_app_store_assets.sh",
+    ):
+        if required_runner not in release_runtime:
+            fail(f"runtime 阶段缺少 {required_runner}")
+    visual_reproducibility = VISUAL_REPRODUCIBILITY.read_text(encoding="utf-8")
+    for required_contract in (
+        "run_visual_render_audit.sh",
+        "reducedMotion",
+        "/usr/bin/cmp",
+    ):
+        if required_contract not in visual_reproducibility:
+            fail(f"视觉可重复性门槛缺少 {required_contract}")
+    workflow = QUALITY_WORKFLOW.read_text(encoding="utf-8")
+    if "stage: [core, runtime]" not in workflow:
+        fail("GitHub Actions 没有并行覆盖 core/runtime 两个职责阶段")
+    if "--hosted-ci-${{ matrix.stage }}" not in workflow:
+        fail("GitHub Actions 没有通过统一发布入口执行分阶段门槛")
+
     print(
         "架构边界验收通过：单一状态聚合根、五个职责模块、值语义撤销历史，"
-        "且没有旧源码形状验收器或平行事实源。"
+        "界面审计复用单一优化产物，且没有旧源码形状验收器或平行事实源。"
     )
 
 

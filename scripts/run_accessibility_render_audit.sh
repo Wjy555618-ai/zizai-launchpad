@@ -5,7 +5,6 @@ PROJECT_DIR="${0:A:h:h}"
 ARTIFACT_DIR="${ZIZAI_BUILD_DIR:-$PROJECT_DIR/.artifacts.noindex}"
 OUTPUT_DIR="$ARTIFACT_DIR/accessibility-render-audit"
 /bin/mkdir -p "$OUTPUT_DIR"
-VISUAL_AUDIT_COMPILED=0
 
 render_case() {
   local name="$1"
@@ -14,10 +13,8 @@ render_case() {
   local effects="$4"
   local output="$OUTPUT_DIR/$name.png"
 
-  ZIZAI_REUSE_VISUAL_AUDIT_BINARY="$VISUAL_AUDIT_COMPILED" \
-    /bin/zsh "$PROJECT_DIR/scripts/run_visual_render_audit.sh" \
+  /bin/zsh "$PROJECT_DIR/scripts/run_visual_render_audit.sh" \
     "$output" "$layout" "$appearance" "$effects" >/dev/null
-  VISUAL_AUDIT_COMPILED=1
   [[ -s "$output" ]] || {
     echo "辅助功能视觉验收失败：$name 没有生成快照" >&2
     exit 1

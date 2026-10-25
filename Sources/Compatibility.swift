@@ -30,7 +30,9 @@ import SwiftUI
 enum ZizaiAccessibilityPreferences {
     static func reduceMotion(systemValue: Bool) -> Bool {
         #if ZIZAI_VISUAL_AUDIT
-            systemValue || ProcessInfo.processInfo.environment["ZIZAI_FORCE_REDUCED_EFFECTS"] == "1"
+            systemValue
+                || ProcessInfo.processInfo.environment["ZIZAI_FORCE_REDUCED_MOTION"] == "1"
+                || ProcessInfo.processInfo.environment["ZIZAI_FORCE_REDUCED_EFFECTS"] == "1"
         #else
             systemValue
         #endif
@@ -38,7 +40,9 @@ enum ZizaiAccessibilityPreferences {
 
     static func reduceTransparency(systemValue: Bool) -> Bool {
         #if ZIZAI_VISUAL_AUDIT
-            systemValue || ProcessInfo.processInfo.environment["ZIZAI_FORCE_REDUCED_EFFECTS"] == "1"
+            systemValue
+                || ProcessInfo.processInfo.environment["ZIZAI_FORCE_REDUCED_TRANSPARENCY"] == "1"
+                || ProcessInfo.processInfo.environment["ZIZAI_FORCE_REDUCED_EFFECTS"] == "1"
         #else
             systemValue
         #endif

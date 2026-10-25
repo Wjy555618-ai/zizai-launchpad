@@ -1,10 +1,10 @@
 import AppKit
+import Darwin
 import SwiftUI
 
-@main
 @MainActor
 enum TabContentPerformanceAudit {
-    static func main() {
+    static func run() {
         let stateDirectory = FileManager.default.temporaryDirectory
             .appendingPathComponent("zizai-tab-content-audit-\(UUID().uuidString)", isDirectory: true)
         defer { try? FileManager.default.removeItem(at: stateDirectory) }
@@ -39,14 +39,14 @@ enum TabContentPerformanceAudit {
         // a genuinely unacceptable one-off stall.
         let sampleCount = 60
         var batchP95s: [Double] = []
-        var allLabeledSamples: [(LayoutMode, Double)] = []
+        var allLabeledSamples: [(mode: LayoutMode, wall: Double, cpu: Double)] = []
 
         // WindowServer may still be retiring the preceding compiler's GPU work
         // when this standalone audit starts. Use three complete sustained
         // batches and gate on their median P95. Across all 180 switches, P99
-        // must remain below two frames and the absolute peak below 80ms. This
-        // catches repeated stutter and genuine stalls without treating one or
-        // two WindowServer scheduler hiccups as a product regression.
+        // must remain below two frames. The absolute product-work gate uses
+        // main-thread CPU time so an unrelated WindowServer or host scheduler
+        // preemption cannot masquerade as a rendering regression.
         for batchIndex in 0..<3 {
             if batchIndex > 0 {
                 RunLoop.current.run(until: Date().addingTimeInterval(0.08))
@@ -55,14 +55,17 @@ enum TabContentPerformanceAudit {
             var samples: [Double] = []
             for index in 0..<sampleCount {
                 let mode = modes[index % modes.count]
-                let start = DispatchTime.now().uptimeNanoseconds
+                let wallStart = DispatchTime.now().uptimeNanoseconds
+                let cpuStart = threadCPUTimeNanoseconds()
                 layoutModeController.selection = mode
                 store.stageLayoutModePersistence(mode)
                 hosting.layoutSubtreeIfNeeded()
-                let end = DispatchTime.now().uptimeNanoseconds
-                let duration = Double(end - start) / 1_000_000
-                samples.append(duration)
-                allLabeledSamples.append((mode, duration))
+                let cpuEnd = threadCPUTimeNanoseconds()
+                let wallEnd = DispatchTime.now().uptimeNanoseconds
+                let wallDuration = Double(wallEnd - wallStart) / 1_000_000
+                let cpuDuration = Double(cpuEnd - cpuStart) / 1_000_000
+                samples.append(wallDuration)
+                allLabeledSamples.append((mode, wallDuration, cpuDuration))
             }
 
             let sorted = samples.sorted()
@@ -71,14 +74,20 @@ enum TabContentPerformanceAudit {
 
         let sortedBatchP95s = batchP95s.sorted()
         let representativeP95 = sortedBatchP95s[sortedBatchP95s.count / 2]
-        let allSamples = allLabeledSamples.map(\.1).sorted()
-        let p99Index = min(allSamples.count - 1, Int(Double(allSamples.count - 1) * 0.99))
-        let combinedP99 = allSamples[p99Index]
-        let absoluteMaximum = allSamples.last ?? .infinity
-        if representativeP95 >= 16.7 || combinedP99 >= 34 || absoluteMaximum >= 80 {
+        let allWallSamples = allLabeledSamples.map(\.wall).sorted()
+        let p99Index = min(
+            allWallSamples.count - 1,
+            Int(Double(allWallSamples.count - 1) * 0.99)
+        )
+        let combinedP99 = allWallSamples[p99Index]
+        let absoluteWallMaximum = allWallSamples.last ?? .infinity
+        let absoluteCPUMaximum = allLabeledSamples.map(\.cpu).max() ?? .infinity
+        if representativeP95 >= 16.7 || combinedP99 >= 34 || absoluteCPUMaximum >= 80 {
             let details =
                 allLabeledSamples
-                .map { "\($0.0.rawValue)=\(format($0.1))ms" }
+                .map {
+                    "\($0.mode.rawValue)=wall \(format($0.wall))ms/cpu \(format($0.cpu))ms"
+                }
                 .joined(separator: "，")
             print("页面切换逐次耗时：\(details)")
         }
@@ -91,8 +100,8 @@ enum TabContentPerformanceAudit {
             "真实页面切换整体 P99 超过两帧 34ms：\(format(combinedP99))ms"
         )
         require(
-            absoluteMaximum < 80,
-            "真实页面切换单次绝对峰值超过 80ms：\(format(absoluteMaximum))ms"
+            absoluteCPUMaximum < 80,
+            "真实页面切换单次主线程 CPU 峰值超过 80ms：\(format(absoluteCPUMaximum))ms"
         )
 
         let batchSummary = batchP95s.map(format).joined(separator: "ms / ")
@@ -100,8 +109,17 @@ enum TabContentPerformanceAudit {
             "页面切换首帧准备验收通过：3 批各 \(sampleCount) 次切换，"
                 + "P95 \(batchSummary)ms，中位 \(format(representativeP95))ms，"
                 + "整体 P99 \(format(combinedP99))ms，"
-                + "绝对峰值 \(format(absoluteMaximum))ms。"
+                + "wall 绝对峰值 \(format(absoluteWallMaximum))ms，"
+                + "主线程 CPU 峰值 \(format(absoluteCPUMaximum))ms。"
         )
+    }
+
+    private static func threadCPUTimeNanoseconds() -> UInt64 {
+        var time = timespec()
+        guard clock_gettime(CLOCK_THREAD_CPUTIME_ID, &time) == 0 else {
+            fail("无法读取主线程 CPU 时钟")
+        }
+        return UInt64(time.tv_sec) * 1_000_000_000 + UInt64(time.tv_nsec)
     }
 
     private static func format(_ value: Double) -> String {

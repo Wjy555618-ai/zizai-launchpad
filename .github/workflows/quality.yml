@@ -15,7 +15,7 @@ concurrency:
 
 jobs:
   verify:
-    name: Xcode ${{ matrix.xcode }}
+    name: ${{ matrix.stage }} / Xcode ${{ matrix.xcode }}
     # The Intel runner deliberately complements the physical Apple Silicon
     # development machine and exercises the other Universal 2 architecture.
     # Hosted jobs compile the UI suite but do not claim an interactive run.
@@ -25,6 +25,7 @@ jobs:
       fail-fast: false
       matrix:
         xcode: ["26.2", "26.6"]
+        stage: [core, runtime]
 
     steps:
       - name: Check out source
@@ -42,10 +43,10 @@ jobs:
           xcodebuild -version
           swift --version
 
-      # GitHub-hosted macOS is an ephemeral, non-interactive validation host.
-      # It runs every deterministic release gate and builds the complete UI
-      # suite, but never converts a missing trusted Accessibility session into
-      # a fake XCUITest pass. The default local gate remains the required real
-      # UI execution path before release.
-      - name: Run hosted quality gate
-        run: ./scripts/verify_release.sh --hosted-ci
+      # Core and runtime stages are independent responsibilities of the same
+      # release contract. Running them in parallel keeps every deterministic
+      # gate while avoiding one opaque, timeout-prone serial job. The core
+      # stage compiles XCUITest but cannot claim execution without a trusted
+      # interactive Accessibility session.
+      - name: Run hosted ${{ matrix.stage }} gate
+        run: ./scripts/verify_release.sh --hosted-ci-${{ matrix.stage }}

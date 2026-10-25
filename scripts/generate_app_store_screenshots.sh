@@ -7,7 +7,6 @@ OUTPUT_DIR="$PROJECT_DIR/AppStore/Screenshots/zh-Hans"
 TEMP_DIR="$ARTIFACT_DIR/app-store-screenshot-source"
 
 /bin/mkdir -p "$OUTPUT_DIR" "$TEMP_DIR"
-VISUAL_AUDIT_COMPILED=0
 
 render_screenshot() {
   local file_stem="$1"
@@ -16,10 +15,8 @@ render_screenshot() {
   local png="$TEMP_DIR/$file_stem.png"
   local jpg="$OUTPUT_DIR/$file_stem.jpg"
 
-  ZIZAI_REUSE_VISUAL_AUDIT_BINARY="$VISUAL_AUDIT_COMPILED" \
-    /bin/zsh "$PROJECT_DIR/scripts/run_visual_render_audit.sh" \
-    "$png" "$layout" "$appearance" standard >/dev/null
-  VISUAL_AUDIT_COMPILED=1
+  /bin/zsh "$PROJECT_DIR/scripts/run_visual_render_audit.sh" \
+    "$png" "$layout" "$appearance" reducedMotion >/dev/null
   /usr/bin/sips -s format jpeg -s formatOptions 92 "$png" --out "$jpg" >/dev/null
 }
 
@@ -30,8 +27,14 @@ render_screenshot "04-search" storeSearch dark
 
 SCREENSHOT_SOURCES=(
   "Tests/VisualRenderAudit.swift"
+  "Tests/UIRuntimeAuditMain.swift"
+  "Tests/TabContentPerformanceAudit.swift"
+  "Tests/TooltipLayeringAudit.swift"
+  "Tests/CanvasInteractionPerformanceAudit.swift"
   "Resources/BrandMarkForeground.svg"
+  "scripts/generate_app_store_screenshots.sh"
   "scripts/run_visual_render_audit.sh"
+  "scripts/ui_runtime_audit_harness.zsh"
   "scripts/audit_source_manifest.zsh"
   "scripts/verify_security_capabilities.py"
 )

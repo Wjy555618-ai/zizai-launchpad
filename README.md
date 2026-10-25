@@ -87,6 +87,7 @@ xcodebuild test \
 - Tab 切换、首帧准备、主线程响应和画布拖动性能。
 - 登录项默认状态、静默启动、应用文件夹授权恢复。
 - Universal 2、macOS 13 部署目标、深浅色、降低动态效果、降低透明度和紧凑窗口。
+- 商店场景使用固定 2× RGB 离屏画布和位图示例图标，连续两轮 PNG/JPEG 必须逐字节一致，防止焦点动画、显示器色彩空间或惰性图标栅格化污染发布素材。
 - 架构职责、依赖方向和文件复杂度上限，以及已安装布局的分组/应用几何不变量；这些静态与数据审计不替代运行行为证据。
 
 当前验证环境、实测指标和证据边界见 [QUALITY_REPORT.md](QUALITY_REPORT.md)。
@@ -97,7 +98,7 @@ xcodebuild test \
 ./scripts/run_ui_tests.sh
 ```
 
-默认的 `verify_release.sh` 会调用该脚本并要求真实执行通过；编译成功不能替代运行通过。GitHub 托管 macOS 没有可由仓库建立的受信任交互式辅助功能会话，因此远程工作流使用显式的 `--hosted-ci` 配置：执行所有确定性门槛并完整编译 XCUITest，但不会把编译写成端到端通过，也不会生成本地完整质量证据。当前发布结论及仍需账号或硬件完成的证据见 [RELEASE_READINESS.md](RELEASE_READINESS.md)。
+默认的 `verify_release.sh` 会调用该脚本并要求真实执行通过；编译成功不能替代运行通过。GitHub 托管 macOS 没有可由仓库建立的受信任交互式辅助功能会话，因此远程工作流由同一入口并行执行 `--hosted-ci-core` 与 `--hosted-ci-runtime` 两个职责阶段：合起来覆盖所有确定性门槛并完整编译 XCUITest，但不会把编译写成端到端通过，也不会生成本地完整质量证据。当前发布结论及仍需账号或硬件完成的证据见 [RELEASE_READINESS.md](RELEASE_READINESS.md)。
 
 代码风格检查：
 
