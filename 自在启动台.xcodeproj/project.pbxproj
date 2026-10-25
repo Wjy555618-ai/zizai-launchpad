@@ -1,0 +1,652 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		A10000000000000000000101 /* AppScanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000001 /* AppScanner.swift */; };
+		A10000000000000000000102 /* CanvasView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000002 /* CanvasView.swift */; };
+		A10000000000000000000103 /* Compatibility.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000003 /* Compatibility.swift */; };
+		A10000000000000000000104 /* InputCapture.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000004 /* InputCapture.swift */; };
+		A10000000000000000000105 /* InteractionGeometry.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000005 /* InteractionGeometry.swift */; };
+		A10000000000000000000106 /* LauncherStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000006 /* LauncherStore.swift */; };
+		A10000000000000000000107 /* LibraryViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000007 /* LibraryViews.swift */; };
+		A10000000000000000000108 /* LoginItemSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000008 /* LoginItemSettings.swift */; };
+		A10000000000000000000109 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000009 /* Models.swift */; };
+		A1000000000000000000010A /* Sheets.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000000A /* Sheets.swift */; };
+		A1000000000000000000010B /* Views.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000000B /* Views.swift */; };
+		A1000000000000000000010C /* ZizaiLaunchpadApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000000C /* ZizaiLaunchpadApp.swift */; };
+		A1000000000000000000010E /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000000E /* PrivacyInfo.xcprivacy */; };
+		A1000000000000000000010F /* ApplicationFolderAccess.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000012 /* ApplicationFolderAccess.swift */; };
+		A10000000000000000000110 /* DesignSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000013 /* DesignSystem.swift */; };
+		A10000000000000000000111 /* AppIcon.icon in Resources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000014 /* AppIcon.icon */; };
+		A10000000000000000000113 /* LaunchPresentation.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000016 /* LaunchPresentation.swift */; };
+		A10000000000000000000114 /* StatePersistence.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000017 /* StatePersistence.swift */; };
+		A10000000000000000000115 /* ApplicationCatalogLogic.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000018 /* ApplicationCatalogLogic.swift */; };
+		A10000000000000000000116 /* BrandMarkForeground.svg in Resources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000019 /* BrandMarkForeground.svg */; };
+		A10000000000000000000117 /* TooltipPresentation.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000001A /* TooltipPresentation.swift */; };
+		A10000000000000000000118 /* UITestSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000001B /* UITestSupport.swift */; };
+		A10000000000000000000119 /* SpatialLayoutEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000001C /* SpatialLayoutEngine.swift */; };
+		A1000000000000000000011A /* LauncherStateReconciler.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000001D /* LauncherStateReconciler.swift */; };
+		A1000000000000000000011B /* ApplicationSearchPolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000001E /* ApplicationSearchPolicy.swift */; };
+		A1000000000000000000011C /* SearchViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000001F /* SearchViews.swift */; };
+		A1000000000000000000011D /* AllAppsViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000020 /* AllAppsViews.swift */; };
+		A1000000000000000000011E /* LauncherStore+Catalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000021 /* LauncherStore+Catalog.swift */; };
+		A1000000000000000000011F /* LauncherStore+Library.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000022 /* LauncherStore+Library.swift */; };
+		A10000000000000000000120 /* LauncherStore+Canvas.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000023 /* LauncherStore+Canvas.swift */; };
+		A10000000000000000000121 /* LauncherStateHistory.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000024 /* LauncherStateHistory.swift */; };
+		A10000000000000000000122 /* LauncherStore+Groups.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000025 /* LauncherStore+Groups.swift */; };
+		B20000000000000000000101 /* ApplicationIdentityTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000001 /* ApplicationIdentityTests.swift */; };
+		B20000000000000000000102 /* InteractionGeometryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000003 /* InteractionGeometryTests.swift */; };
+		B20000000000000000000103 /* LoginItemManagerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000004 /* LoginItemManagerTests.swift */; };
+		B20000000000000000000104 /* StatePersistenceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000005 /* StatePersistenceTests.swift */; };
+		B20000000000000000000105 /* TooltipPresentationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000006 /* TooltipPresentationTests.swift */; };
+		B20000000000000000000106 /* LauncherStoreIntegrationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000007 /* LauncherStoreIntegrationTests.swift */; };
+		B20000000000000000000107 /* ViewCompositionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000008 /* ViewCompositionTests.swift */; };
+		C30000000000000000000101 /* LaunchpadUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C30000000000000000000001 /* LaunchpadUITests.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		B20000000000000000000501 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A10000000000000000000501 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = A10000000000000000000401;
+			remoteInfo = "自在启动台";
+		};
+		C30000000000000000000501 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A10000000000000000000501 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = A10000000000000000000401;
+			remoteInfo = "自在启动台";
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		A10000000000000000000001 /* AppScanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppScanner.swift; sourceTree = "<group>"; };
+		A10000000000000000000002 /* CanvasView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CanvasView.swift; sourceTree = "<group>"; };
+		A10000000000000000000003 /* Compatibility.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Compatibility.swift; sourceTree = "<group>"; };
+		A10000000000000000000004 /* InputCapture.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InputCapture.swift; sourceTree = "<group>"; };
+		A10000000000000000000005 /* InteractionGeometry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InteractionGeometry.swift; sourceTree = "<group>"; };
+		A10000000000000000000006 /* LauncherStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LauncherStore.swift; sourceTree = "<group>"; };
+		A10000000000000000000007 /* LibraryViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryViews.swift; sourceTree = "<group>"; };
+		A10000000000000000000008 /* LoginItemSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginItemSettings.swift; sourceTree = "<group>"; };
+		A10000000000000000000009 /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
+		A1000000000000000000000A /* Sheets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Sheets.swift; sourceTree = "<group>"; };
+		A1000000000000000000000B /* Views.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Views.swift; sourceTree = "<group>"; };
+		A1000000000000000000000C /* ZizaiLaunchpadApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ZizaiLaunchpadApp.swift; sourceTree = "<group>"; };
+		A1000000000000000000000D /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		A1000000000000000000000E /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		A1000000000000000000000F /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		A10000000000000000000010 /* ZizaiLaunchpad.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = ZizaiLaunchpad.entitlements; sourceTree = "<group>"; };
+		A10000000000000000000011 /* 自在启动台.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "自在启动台.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		A10000000000000000000012 /* ApplicationFolderAccess.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApplicationFolderAccess.swift; sourceTree = "<group>"; };
+		A10000000000000000000013 /* DesignSystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesignSystem.swift; sourceTree = "<group>"; };
+		A10000000000000000000014 /* AppIcon.icon */ = {isa = PBXFileReference; lastKnownFileType = folder.iconcomposer.icon; path = AppIcon.icon; sourceTree = "<group>"; };
+		A10000000000000000000015 /* AppIcon-1024.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "AppIcon-1024.png"; sourceTree = "<group>"; };
+		A10000000000000000000016 /* LaunchPresentation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LaunchPresentation.swift; sourceTree = "<group>"; };
+		A10000000000000000000017 /* StatePersistence.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatePersistence.swift; sourceTree = "<group>"; };
+		A10000000000000000000018 /* ApplicationCatalogLogic.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApplicationCatalogLogic.swift; sourceTree = "<group>"; };
+		A10000000000000000000019 /* BrandMarkForeground.svg */ = {isa = PBXFileReference; lastKnownFileType = image.svg; path = BrandMarkForeground.svg; sourceTree = "<group>"; };
+		A1000000000000000000001A /* TooltipPresentation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TooltipPresentation.swift; sourceTree = "<group>"; };
+		A1000000000000000000001B /* UITestSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UITestSupport.swift; sourceTree = "<group>"; };
+		A1000000000000000000001C /* SpatialLayoutEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpatialLayoutEngine.swift; sourceTree = "<group>"; };
+		A1000000000000000000001D /* LauncherStateReconciler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LauncherStateReconciler.swift; sourceTree = "<group>"; };
+		A1000000000000000000001E /* ApplicationSearchPolicy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApplicationSearchPolicy.swift; sourceTree = "<group>"; };
+		A1000000000000000000001F /* SearchViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchViews.swift; sourceTree = "<group>"; };
+		A10000000000000000000020 /* AllAppsViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AllAppsViews.swift; sourceTree = "<group>"; };
+		A10000000000000000000021 /* LauncherStore+Catalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "LauncherStore+Catalog.swift"; sourceTree = "<group>"; };
+		A10000000000000000000022 /* LauncherStore+Library.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "LauncherStore+Library.swift"; sourceTree = "<group>"; };
+		A10000000000000000000023 /* LauncherStore+Canvas.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "LauncherStore+Canvas.swift"; sourceTree = "<group>"; };
+		A10000000000000000000024 /* LauncherStateHistory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LauncherStateHistory.swift; sourceTree = "<group>"; };
+		A10000000000000000000025 /* LauncherStore+Groups.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "LauncherStore+Groups.swift"; sourceTree = "<group>"; };
+		B20000000000000000000001 /* ApplicationIdentityTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApplicationIdentityTests.swift; sourceTree = "<group>"; };
+		B20000000000000000000002 /* 自在启动台Tests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "自在启动台Tests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
+		B20000000000000000000003 /* InteractionGeometryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InteractionGeometryTests.swift; sourceTree = "<group>"; };
+		B20000000000000000000004 /* LoginItemManagerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginItemManagerTests.swift; sourceTree = "<group>"; };
+		B20000000000000000000005 /* StatePersistenceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatePersistenceTests.swift; sourceTree = "<group>"; };
+		B20000000000000000000006 /* TooltipPresentationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TooltipPresentationTests.swift; sourceTree = "<group>"; };
+		B20000000000000000000007 /* LauncherStoreIntegrationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LauncherStoreIntegrationTests.swift; sourceTree = "<group>"; };
+		B20000000000000000000008 /* ViewCompositionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewCompositionTests.swift; sourceTree = "<group>"; };
+		C30000000000000000000001 /* LaunchpadUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LaunchpadUITests.swift; sourceTree = "<group>"; };
+		C30000000000000000000002 /* 自在启动台UITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "自在启动台UITests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		A10000000000000000000201 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		B20000000000000000000201 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C30000000000000000000201 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		A10000000000000000000301 = {
+			isa = PBXGroup;
+			children = (
+				A10000000000000000000302 /* Sources */,
+				A10000000000000000000303 /* Resources */,
+				B20000000000000000000301 /* Tests */,
+				C30000000000000000000301 /* UI Tests */,
+				A10000000000000000000304 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		A10000000000000000000302 /* Sources */ = {
+			isa = PBXGroup;
+			children = (
+				A10000000000000000000020 /* AllAppsViews.swift */,
+				A10000000000000000000012 /* ApplicationFolderAccess.swift */,
+				A10000000000000000000018 /* ApplicationCatalogLogic.swift */,
+				A1000000000000000000001E /* ApplicationSearchPolicy.swift */,
+				A10000000000000000000001 /* AppScanner.swift */,
+				A10000000000000000000002 /* CanvasView.swift */,
+				A10000000000000000000003 /* Compatibility.swift */,
+				A10000000000000000000013 /* DesignSystem.swift */,
+				A10000000000000000000004 /* InputCapture.swift */,
+				A10000000000000000000005 /* InteractionGeometry.swift */,
+				A10000000000000000000023 /* LauncherStore+Canvas.swift */,
+				A10000000000000000000021 /* LauncherStore+Catalog.swift */,
+				A10000000000000000000025 /* LauncherStore+Groups.swift */,
+				A10000000000000000000022 /* LauncherStore+Library.swift */,
+				A10000000000000000000006 /* LauncherStore.swift */,
+				A10000000000000000000024 /* LauncherStateHistory.swift */,
+				A1000000000000000000001D /* LauncherStateReconciler.swift */,
+				A10000000000000000000007 /* LibraryViews.swift */,
+				A10000000000000000000016 /* LaunchPresentation.swift */,
+				A10000000000000000000008 /* LoginItemSettings.swift */,
+				A10000000000000000000009 /* Models.swift */,
+				A1000000000000000000001F /* SearchViews.swift */,
+				A1000000000000000000000A /* Sheets.swift */,
+				A1000000000000000000001C /* SpatialLayoutEngine.swift */,
+				A10000000000000000000017 /* StatePersistence.swift */,
+				A1000000000000000000001A /* TooltipPresentation.swift */,
+				A1000000000000000000001B /* UITestSupport.swift */,
+				A1000000000000000000000B /* Views.swift */,
+				A1000000000000000000000C /* ZizaiLaunchpadApp.swift */,
+			);
+			path = Sources;
+			sourceTree = "<group>";
+		};
+		A10000000000000000000303 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				A10000000000000000000014 /* AppIcon.icon */,
+				A10000000000000000000015 /* AppIcon-1024.png */,
+				A10000000000000000000019 /* BrandMarkForeground.svg */,
+				A1000000000000000000000D /* Assets.xcassets */,
+				A1000000000000000000000E /* PrivacyInfo.xcprivacy */,
+				A1000000000000000000000F /* Info.plist */,
+				A10000000000000000000010 /* ZizaiLaunchpad.entitlements */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+		A10000000000000000000304 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				A10000000000000000000011 /* 自在启动台.app */,
+				B20000000000000000000002 /* 自在启动台Tests.xctest */,
+				C30000000000000000000002 /* 自在启动台UITests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		B20000000000000000000301 /* Tests */ = {
+			isa = PBXGroup;
+			children = (
+				B20000000000000000000001 /* ApplicationIdentityTests.swift */,
+				B20000000000000000000003 /* InteractionGeometryTests.swift */,
+				B20000000000000000000004 /* LoginItemManagerTests.swift */,
+				B20000000000000000000007 /* LauncherStoreIntegrationTests.swift */,
+				B20000000000000000000005 /* StatePersistenceTests.swift */,
+				B20000000000000000000006 /* TooltipPresentationTests.swift */,
+				B20000000000000000000008 /* ViewCompositionTests.swift */,
+			);
+			path = Tests/XCTest;
+			sourceTree = "<group>";
+		};
+		C30000000000000000000301 /* UI Tests */ = {
+			isa = PBXGroup;
+			children = (
+				C30000000000000000000001 /* LaunchpadUITests.swift */,
+			);
+			path = Tests/XCUITests;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		A10000000000000000000401 /* 自在启动台 */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A10000000000000000000802 /* Build configuration list for PBXNativeTarget "自在启动台" */;
+			buildPhases = (
+				A10000000000000000000202 /* Sources */,
+				A10000000000000000000201 /* Frameworks */,
+				A10000000000000000000203 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = "自在启动台";
+			productName = "自在启动台";
+			productReference = A10000000000000000000011 /* 自在启动台.app */;
+			productType = "com.apple.product-type.application";
+		};
+		B20000000000000000000401 /* 自在启动台Tests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = B20000000000000000000801 /* Build configuration list for PBXNativeTarget "自在启动台Tests" */;
+			buildPhases = (
+				B20000000000000000000202 /* Sources */,
+				B20000000000000000000201 /* Frameworks */,
+				B20000000000000000000203 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				B20000000000000000000601 /* PBXTargetDependency */,
+			);
+			name = "自在启动台Tests";
+			productName = "自在启动台Tests";
+			productReference = B20000000000000000000002 /* 自在启动台Tests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		C30000000000000000000401 /* 自在启动台UITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = C30000000000000000000801 /* Build configuration list for PBXNativeTarget "自在启动台UITests" */;
+			buildPhases = (
+				C30000000000000000000202 /* Sources */,
+				C30000000000000000000201 /* Frameworks */,
+				C30000000000000000000203 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				C30000000000000000000601 /* PBXTargetDependency */,
+			);
+			name = "自在启动台UITests";
+			productName = "自在启动台UITests";
+			productReference = C30000000000000000000002 /* 自在启动台UITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		A10000000000000000000501 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 2700;
+				LastUpgradeCheck = 2700;
+				TargetAttributes = {
+					A10000000000000000000401 = {
+						CreatedOnToolsVersion = 27.0;
+					};
+					B20000000000000000000401 = {
+						CreatedOnToolsVersion = 27.0;
+						TestTargetID = A10000000000000000000401;
+					};
+					C30000000000000000000401 = {
+						CreatedOnToolsVersion = 27.0;
+						TestTargetID = A10000000000000000000401;
+					};
+				};
+			};
+			buildConfigurationList = A10000000000000000000801 /* Build configuration list for PBXProject "自在启动台" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = zh_CN;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				zh_CN,
+				en,
+				Base,
+				"zh-Hans",
+			);
+			mainGroup = A10000000000000000000301;
+			productRefGroup = A10000000000000000000304 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				A10000000000000000000401 /* 自在启动台 */,
+				B20000000000000000000401 /* 自在启动台Tests */,
+				C30000000000000000000401 /* 自在启动台UITests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		A10000000000000000000203 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A10000000000000000000111 /* AppIcon.icon in Resources */,
+				A10000000000000000000116 /* BrandMarkForeground.svg in Resources */,
+				A1000000000000000000010E /* PrivacyInfo.xcprivacy in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		B20000000000000000000203 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C30000000000000000000203 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		A10000000000000000000202 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A1000000000000000000011D /* AllAppsViews.swift in Sources */,
+				A1000000000000000000010F /* ApplicationFolderAccess.swift in Sources */,
+				A10000000000000000000115 /* ApplicationCatalogLogic.swift in Sources */,
+				A1000000000000000000011B /* ApplicationSearchPolicy.swift in Sources */,
+				A10000000000000000000101 /* AppScanner.swift in Sources */,
+				A10000000000000000000102 /* CanvasView.swift in Sources */,
+				A10000000000000000000103 /* Compatibility.swift in Sources */,
+				A10000000000000000000110 /* DesignSystem.swift in Sources */,
+				A10000000000000000000104 /* InputCapture.swift in Sources */,
+				A10000000000000000000105 /* InteractionGeometry.swift in Sources */,
+				A10000000000000000000120 /* LauncherStore+Canvas.swift in Sources */,
+				A1000000000000000000011E /* LauncherStore+Catalog.swift in Sources */,
+				A10000000000000000000122 /* LauncherStore+Groups.swift in Sources */,
+				A1000000000000000000011F /* LauncherStore+Library.swift in Sources */,
+				A10000000000000000000106 /* LauncherStore.swift in Sources */,
+				A10000000000000000000121 /* LauncherStateHistory.swift in Sources */,
+				A10000000000000000000107 /* LibraryViews.swift in Sources */,
+				A10000000000000000000113 /* LaunchPresentation.swift in Sources */,
+				A10000000000000000000108 /* LoginItemSettings.swift in Sources */,
+				A10000000000000000000109 /* Models.swift in Sources */,
+				A1000000000000000000011C /* SearchViews.swift in Sources */,
+				A1000000000000000000010A /* Sheets.swift in Sources */,
+				A10000000000000000000119 /* SpatialLayoutEngine.swift in Sources */,
+				A1000000000000000000011A /* LauncherStateReconciler.swift in Sources */,
+				A10000000000000000000114 /* StatePersistence.swift in Sources */,
+				A10000000000000000000117 /* TooltipPresentation.swift in Sources */,
+				A10000000000000000000118 /* UITestSupport.swift in Sources */,
+				A1000000000000000000010B /* Views.swift in Sources */,
+				A1000000000000000000010C /* ZizaiLaunchpadApp.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		B20000000000000000000202 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				B20000000000000000000101 /* ApplicationIdentityTests.swift in Sources */,
+				B20000000000000000000102 /* InteractionGeometryTests.swift in Sources */,
+				B20000000000000000000103 /* LoginItemManagerTests.swift in Sources */,
+				B20000000000000000000104 /* StatePersistenceTests.swift in Sources */,
+				B20000000000000000000105 /* TooltipPresentationTests.swift in Sources */,
+				B20000000000000000000106 /* LauncherStoreIntegrationTests.swift in Sources */,
+				B20000000000000000000107 /* ViewCompositionTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C30000000000000000000202 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				C30000000000000000000101 /* LaunchpadUITests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		B20000000000000000000601 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = A10000000000000000000401 /* 自在启动台 */;
+			targetProxy = B20000000000000000000501 /* PBXContainerItemProxy */;
+		};
+		C30000000000000000000601 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = A10000000000000000000401 /* 自在启动台 */;
+			targetProxy = C30000000000000000000501 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		A10000000000000000000701 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ENABLE_MODULES = YES;
+				LM_SKIP_METADATA_EXTRACTION = YES;
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_VERSION = 6.0;
+			};
+			name = Debug;
+		};
+		A10000000000000000000702 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ENABLE_MODULES = YES;
+				LM_SKIP_METADATA_EXTRACTION = YES;
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				SDKROOT = macosx;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 6.0;
+			};
+			name = Release;
+		};
+		A10000000000000000000703 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ARCHS = (
+					arm64,
+					x86_64,
+				);
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = Resources/ZizaiLaunchpad.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				DEAD_CODE_STRIPPING = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_APP_SANDBOX = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
+				EXECUTABLE_NAME = ZizaiLaunchpad;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = Resources/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				MARKETING_VERSION = 1.0.0;
+				ONLY_ACTIVE_ARCH = NO;
+				PRODUCT_BUNDLE_IDENTIFIER = local.wangzhentao.ZizaiLaunchpad.debug;
+				PRODUCT_DISPLAY_NAME = "自在启动台·开发版";
+				PRODUCT_NAME = "自在启动台";
+				SUPPORTED_PLATFORMS = macosx;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_STRICT_CONCURRENCY = complete;
+				SWIFT_TREAT_WARNINGS_AS_ERRORS = YES;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		A10000000000000000000704 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ARCHS = (
+					arm64,
+					x86_64,
+				);
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = Resources/ZizaiLaunchpad.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				DEAD_CODE_STRIPPING = YES;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_APP_SANDBOX = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
+				EXECUTABLE_NAME = ZizaiLaunchpad;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = Resources/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				MARKETING_VERSION = 1.0.0;
+				ONLY_ACTIVE_ARCH = NO;
+				PRODUCT_BUNDLE_IDENTIFIER = local.wangzhentao.ZizaiLaunchpad;
+				PRODUCT_DISPLAY_NAME = "自在启动台";
+				PRODUCT_NAME = "自在启动台";
+				SUPPORTED_PLATFORMS = macosx;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_STRICT_CONCURRENCY = complete;
+				SWIFT_TREAT_WARNINGS_AS_ERRORS = YES;
+			};
+			name = Release;
+		};
+		B20000000000000000000701 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@loader_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				PRODUCT_BUNDLE_IDENTIFIER = local.wangzhentao.ZizaiLaunchpadTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_STRICT_CONCURRENCY = complete;
+				SWIFT_TREAT_WARNINGS_AS_ERRORS = YES;
+				SWIFT_VERSION = 6.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/自在启动台.app/Contents/MacOS/ZizaiLaunchpad";
+			};
+			name = Debug;
+		};
+		B20000000000000000000702 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@loader_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				PRODUCT_BUNDLE_IDENTIFIER = local.wangzhentao.ZizaiLaunchpadTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_STRICT_CONCURRENCY = complete;
+				SWIFT_TREAT_WARNINGS_AS_ERRORS = YES;
+				SWIFT_VERSION = 6.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/自在启动台.app/Contents/MacOS/ZizaiLaunchpad";
+			};
+			name = Release;
+		};
+		C30000000000000000000701 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				GENERATE_INFOPLIST_FILE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				PRODUCT_BUNDLE_IDENTIFIER = local.wangzhentao.ZizaiLaunchpadUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_STRICT_CONCURRENCY = complete;
+				SWIFT_TREAT_WARNINGS_AS_ERRORS = YES;
+				SWIFT_VERSION = 6.0;
+				TEST_TARGET_NAME = "自在启动台";
+			};
+			name = Debug;
+		};
+		C30000000000000000000702 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				GENERATE_INFOPLIST_FILE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				PRODUCT_BUNDLE_IDENTIFIER = local.wangzhentao.ZizaiLaunchpadUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_STRICT_CONCURRENCY = complete;
+				SWIFT_TREAT_WARNINGS_AS_ERRORS = YES;
+				SWIFT_VERSION = 6.0;
+				TEST_TARGET_NAME = "自在启动台";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		A10000000000000000000801 /* Build configuration list for PBXProject "自在启动台" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A10000000000000000000701 /* Debug */,
+				A10000000000000000000702 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		A10000000000000000000802 /* Build configuration list for PBXNativeTarget "自在启动台" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A10000000000000000000703 /* Debug */,
+				A10000000000000000000704 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		B20000000000000000000801 /* Build configuration list for PBXNativeTarget "自在启动台Tests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				B20000000000000000000701 /* Debug */,
+				B20000000000000000000702 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		C30000000000000000000801 /* Build configuration list for PBXNativeTarget "自在启动台UITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				C30000000000000000000701 /* Debug */,
+				C30000000000000000000702 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = A10000000000000000000501 /* Project object */;
+}

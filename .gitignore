@@ -1,0 +1,47 @@
+# macOS metadata
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Xcode user state and generated output
+DerivedData/
+build/
+.artifacts.noindex/
+*.xcarchive
+*.dSYM
+*.xcuserstate
+xcuserdata/
+*.xcodeproj/project.xcworkspace/
+*.xccheckout
+*.xcscmblueprint
+
+# Swift Package Manager caches
+.build/
+.swiftpm/
+
+# Python verification caches
+__pycache__/
+*.py[cod]
+
+# Local agent handoff state
+handoff/evidence/before/
+handoff/feedback-images/
+handoff/FINAL_ACCEPTANCE_REVIEW.md
+handoff/IMPLEMENTATION_REPORT.md
+
+# Superseded local evidence retained for audit history, not public release truth
+handoff/evidence/after/runtime-verification.md
+handoff/evidence/after/final-groups.jpeg
+handoff/evidence/after/final-space-fit.jpeg
+handoff/evidence/after/groups-top-focus.jpeg
+handoff/evidence/after/system-resolved-app-icon.png
+Resources/IconComposer/archive/
+
+# Signing material and local configuration
+.env
+.env.*
+*.cer
+*.p12
+*.keychain
+*.mobileprovision
+*.provisionprofile

@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 2,
+  "artifactType": "mac-app-store-initial-source-handoff",
+  "productName": "自在启动台",
+  "releaseLabel": "App Store 首发版",
+  "marketingVersion": "1.0.0",
+  "build": "1",
+  "entrypoint": "APP_STORE_HANDOFF.md",
+  "productBaseline": "CURRENT_PRODUCT_BASELINE.md",
+  "iconComposerPackage": "Resources/IconComposer/START_HERE.md",
+  "fileIntegrity": "SHA256SUMS",
+  "sourceDirectories": [
+    "Sources",
+    "Resources",
+    "Tests",
+    "AppStore",
+    "自在启动台.xcodeproj"
+  ],
+  "includesPrebuiltApp": false,
+  "includesBuildDirectory": false,
+  "includesPreviousPackages": false,
+  "includesPersonalLayout": false,
+  "includesSigningIdentity": false,
+  "includesAppleCredentials": false,
+  "intendedNextEnvironment": "A separate release Mac with full Xcode",
+  "appStoreStatus": "verified Xcode source and unsigned Archive path; final Bundle ID, distribution signing and Validate App remain required"
+}

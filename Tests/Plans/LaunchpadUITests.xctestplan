@@ -1,0 +1,27 @@
+{
+  "configurations" : [
+    {
+      "id" : "D7F3385D-3AF0-4F58-9D80-8F030294D6B8",
+      "name" : "UI Test Configuration",
+      "options" : {
+
+      }
+    }
+  ],
+  "defaultOptions" : {
+    "performanceAntipatternCheckerEnabled" : false,
+    "threadPerformanceCheckerRuntimeIssueDetection" : {
+      "enabled" : false
+    }
+  },
+  "testTargets" : [
+    {
+      "target" : {
+        "containerPath" : "container:自在启动台.xcodeproj",
+        "identifier" : "C30000000000000000000401",
+        "name" : "自在启动台UITests"
+      }
+    }
+  ],
+  "version" : 1
+}

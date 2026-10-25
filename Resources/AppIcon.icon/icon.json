@@ -1,0 +1,104 @@
+{
+  "features" : [
+    "refractivity"
+  ],
+  "fill" : {
+    "solid" : "extended-gray:1.00000,1.00000"
+  },
+  "groups" : [
+    {
+      "layers" : [
+        {
+          "image-name" : "04-green-circle.svg",
+          "name" : "04-green-circle"
+        }
+      ],
+      "name" : "Green Circle",
+      "refractivity" : {
+        "depth" : 0.18,
+        "enabled" : true,
+        "strength" : 0.32
+      },
+      "shadow" : {
+        "kind" : "neutral",
+        "opacity" : 0.18
+      },
+      "translucency" : {
+        "enabled" : true,
+        "value" : 0.45
+      }
+    },
+    {
+      "layers" : [
+        {
+          "image-name" : "03-yellow-square.svg",
+          "name" : "03-yellow-square"
+        }
+      ],
+      "name" : "Yellow Square",
+      "refractivity" : {
+        "depth" : 0.18,
+        "enabled" : true,
+        "strength" : 0.32
+      },
+      "shadow" : {
+        "kind" : "neutral",
+        "opacity" : 0.18
+      },
+      "translucency" : {
+        "enabled" : true,
+        "value" : 0.45
+      }
+    },
+    {
+      "layers" : [
+        {
+          "image-name" : "02-blue-triangle.svg",
+          "name" : "02-blue-triangle"
+        }
+      ],
+      "name" : "Blue Triangle",
+      "refractivity" : {
+        "depth" : 0.18,
+        "enabled" : true,
+        "strength" : 0.32
+      },
+      "shadow" : {
+        "kind" : "neutral",
+        "opacity" : 0.18
+      },
+      "translucency" : {
+        "enabled" : true,
+        "value" : 0.45
+      }
+    },
+    {
+      "layers" : [
+        {
+          "image-name" : "01-red-square.svg",
+          "name" : "01-red-square"
+        }
+      ],
+      "name" : "Red Square",
+      "refractivity" : {
+        "depth" : 0.18,
+        "enabled" : true,
+        "strength" : 0.32
+      },
+      "shadow" : {
+        "kind" : "neutral",
+        "opacity" : 0.18
+      },
+      "translucency" : {
+        "enabled" : true,
+        "value" : 0.45
+      }
+    }
+  ],
+  "supported-platforms" : {
+    "circles" : [
+      "watchOS"
+    ],
+    "squares" : "shared"
+  }
+}

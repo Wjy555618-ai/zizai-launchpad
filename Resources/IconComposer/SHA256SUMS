@@ -1,0 +1,13 @@
+6f30c50b0897931fc160219eafb858b6691bb50950ecaf5efd6ca0ce50e64545  ./00-background-reference.svg
+e5761801e5c218ac81b12e25bf807eb87ab9515707082169f5f8fc50dbe93639  ./01-red-square.svg
+cde7235796297dd14ff64bf7ccf692d7e81130b97741e2e9eaf17acc8be1817a  ./02-blue-triangle.svg
+96335b547e2f6fb9f4ee7dbe6b7abf91689db9082c2ab69d025c31c31938bca7  ./03-yellow-square.svg
+5a9a436d9976b7fd9b69c7adc632cffddabdcfd64e2782b89f5abd95e5fb613b  ./04-green-circle.svg
+4ac05c629e304225de2633adceef2f06a2469bc68fe330451c9d7115ec865059  ./05-flat-composite-preview.png
+d1f4e518db25d51d7f9bcb98cfa0580476d8e921637359ca4cc7291d1d1440c5  ./05-flat-composite-preview.svg
+02e867bf96e7deabd16da820757afc87b2dfebf425d26955d1c4307b8db0372c  ./IMPLEMENTATION_HANDOFF.md
+7f12e13d0b0edc19c95cb600f63a716d093bb427a33d0f96bcdd94ad9a7e8951  ./ICON_COMPOSER_MANIFEST.json
+bd72d5880bc37685a25c691be1e3ccd3d25cc0a7113393068b618ad6d3e2ebde  ./START_HERE.md
+bc11f4934dd92085a25861da50feb636530e0993f55782714bc459e82353679d  ./current-logo-reference.png
+067400e5565cb09953e951c352d2f4dc0ad79d1a0480414cee23452c772a4a57  ./current-logo-reference.svg
+7cf845709d7f640097e26718662e60d0faf860e78b56b3fdde4964accde2f655  ./verify_package.sh

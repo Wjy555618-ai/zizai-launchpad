@@ -1,0 +1,61 @@
+{
+  "packageName": "自在工作台-Icon-Composer图层包",
+  "intendedAppName": "自在启动台",
+  "canvas": {
+    "width": 1024,
+    "height": 1024,
+    "viewBox": "0 0 1024 1024",
+    "preMasked": false
+  },
+  "source": {
+    "originalSvgSha256": "1491bffed171595b6ef0fe50062faa6001addfa6bf43344a0ebfcd1926e39446",
+    "productionCompositeSvgSha256": "067400e5565cb09953e951c352d2f4dc0ad79d1a0480414cee23452c772a4a57",
+    "opticalTranslation": {
+      "x": -7,
+      "y": -5
+    }
+  },
+  "background": {
+    "implementation": "Icon Composer canvas",
+    "topColor": "#FFFFFF",
+    "gradientStartY": 512,
+    "bottomColor": "#F1F1F1"
+  },
+  "layers": [
+    {
+      "order": 1,
+      "file": "01-red-square.svg",
+      "name": "Red Square",
+      "color": "#EE3134",
+      "iconComposerGroup": 1
+    },
+    {
+      "order": 2,
+      "file": "02-blue-triangle.svg",
+      "name": "Blue Triangle",
+      "color": "#3485FF",
+      "iconComposerGroup": 2
+    },
+    {
+      "order": 3,
+      "file": "03-yellow-square.svg",
+      "name": "Yellow Square",
+      "color": "#FEB21A",
+      "iconComposerGroup": 3
+    },
+    {
+      "order": 4,
+      "file": "04-green-circle.svg",
+      "name": "Green Circle",
+      "color": "#38C97E",
+      "iconComposerGroup": 4
+    }
+  ],
+  "forbidden": [
+    "redraw geometry",
+    "pre-mask rounded corners",
+    "merge foreground layers before Icon Composer",
+    "add baked blur or shadow to foreground SVG files",
+    "declare completion without installed macOS visual verification"
+  ]
+}
