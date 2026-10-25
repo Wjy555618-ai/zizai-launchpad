@@ -134,6 +134,11 @@ enum ScannerAudit {
             .appendingPathComponent("zizai-scanner-extra-\(UUID().uuidString)", isDirectory: true)
         let appURL = root.appendingPathComponent("Authorized Sample.app", isDirectory: true)
         let contents = appURL.appendingPathComponent("Contents", isDirectory: true)
+        let executable =
+            contents
+            .appendingPathComponent("MacOS", isDirectory: true)
+            .appendingPathComponent("AuthorizedSample")
+        let malformedApp = root.appendingPathComponent("Malformed.app", isDirectory: true)
         defer { try? FileManager.default.removeItem(at: root) }
 
         do {
@@ -141,6 +146,8 @@ enum ScannerAudit {
             let plist: [String: Any] = [
                 "CFBundleIdentifier": "test.zizai.authorized-sample",
                 "CFBundleName": "Authorized Sample",
+                "CFBundleExecutable": "AuthorizedSample",
+                "CFBundlePackageType": "APPL",
             ]
             let data = try PropertyListSerialization.data(
                 fromPropertyList: plist,
@@ -148,6 +155,19 @@ enum ScannerAudit {
                 options: 0
             )
             try data.write(to: contents.appendingPathComponent("Info.plist"), options: .atomic)
+            try FileManager.default.createDirectory(
+                at: executable.deletingLastPathComponent(),
+                withIntermediateDirectories: true
+            )
+            try Data("#!/bin/sh\nexit 0\n".utf8).write(to: executable, options: .atomic)
+            try FileManager.default.setAttributes(
+                [.posixPermissions: 0o755],
+                ofItemAtPath: executable.path
+            )
+            try FileManager.default.createDirectory(
+                at: malformedApp,
+                withIntermediateDirectories: true
+            )
         } catch {
             fail("无法创建授权目录扫描样本：\(error.localizedDescription)")
         }
@@ -160,6 +180,10 @@ enum ScannerAudit {
         require(
             authorized.contains(where: { $0.bundleIdentifier == "test.zizai.authorized-sample" }),
             "用户授权后仍未扫描附加应用目录"
+        )
+        require(
+            !authorized.contains(where: { $0.path == malformedApp.path }),
+            "不可执行的伪 .app 目录被误当成应用"
         )
     }
 

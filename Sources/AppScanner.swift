@@ -93,7 +93,11 @@ enum AppScanner {
 
     private static func makeItem(_ url: URL) -> AppInfo? {
         let canonicalURL = URL(fileURLWithPath: canonicalPath(for: url))
-        guard let bundle = Bundle(url: canonicalURL) else { return nil }
+        guard
+            let bundle = Bundle(url: canonicalURL),
+            let executableURL = bundle.executableURL,
+            FileManager.default.isExecutableFile(atPath: executableURL.path)
+        else { return nil }
         let info = bundle.infoDictionary ?? [:]
         let localizedInfo = bundle.localizedInfoDictionary ?? [:]
         if (info["LSBackgroundOnly"] as? Bool) == true || (info["LSUIElement"] as? Bool) == true {

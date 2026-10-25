@@ -4,9 +4,16 @@ import XCTest
 @testable import 自在启动台
 
 final class ApplicationIdentityTests: XCTestCase {
+    func testApplicationHostUsesUnitTestLaunchMode() {
+        XCTAssertEqual(ZizaiLaunchConfiguration.launchMode(), .unitTestHost)
+    }
+
     func testLaunchConfigurationKeepsUnitAndUITestHostsDisjoint() {
         let unitConfiguration = ZizaiLaunchConfiguration.current(
-            environment: [ZizaiLaunchConfiguration.unitTestingEnvironmentKey: "1"]
+            environment: [
+                "XCTestBundlePath": "/tmp/自在启动台Tests.xctest",
+                "XCInjectBundleInto": "/tmp/自在启动台.app/Contents/MacOS/ZizaiLaunchpad",
+            ]
         )
         XCTAssertEqual(unitConfiguration.mode, .unitTestHost)
         XCTAssertEqual(unitConfiguration.applications, [])
@@ -23,7 +30,8 @@ final class ApplicationIdentityTests: XCTestCase {
 
         let inheritedTestActionConfiguration = ZizaiLaunchConfiguration.current(
             environment: [
-                ZizaiLaunchConfiguration.unitTestingEnvironmentKey: "1",
+                "XCTestBundlePath": "/tmp/自在启动台Tests.xctest",
+                "XCInjectBundleInto": "/tmp/自在启动台.app/Contents/MacOS/ZizaiLaunchpad",
                 ZizaiLaunchConfiguration.uiTestingEnvironmentKey: "1",
                 ZizaiLaunchConfiguration.uiTestSessionEnvironmentKey: "launch-mode-precedence-test",
             ]
@@ -38,6 +46,13 @@ final class ApplicationIdentityTests: XCTestCase {
         XCTAssertEqual(productionConfiguration.mode, .production)
         XCTAssertNil(productionConfiguration.applications)
         XCTAssertNil(productionConfiguration.stateDirectory)
+
+        XCTAssertEqual(
+            ZizaiLaunchConfiguration.current(
+                environment: ["XCTestBundlePath": "/tmp/missing-injection-target.xctest"]
+            ).mode,
+            .production
+        )
     }
 
     func testDisplayNameFallsBackWhenLocalizedMetadataIsBlank() {

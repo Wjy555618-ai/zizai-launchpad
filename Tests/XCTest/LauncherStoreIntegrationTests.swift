@@ -26,6 +26,65 @@ final class LauncherStoreIntegrationTests: XCTestCase {
         }
     }
 
+    func testAsyncCatalogReloadPreparesThenPublishesOneCoherentSnapshot() async {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("zizai-async-reload-\(UUID().uuidString)", isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let applications = makeApplications()
+        var preparedIDs: [String] = []
+        let store = LauncherStore(
+            stateDirectory: directory,
+            appProvider: { [] },
+            asyncAppProvider: { applications },
+            appPreparer: { scannedApps in
+                preparedIDs = scannedApps.map(\.id)
+            }
+        )
+
+        XCTAssertTrue(store.isReloadingApps)
+        let initialReload = store.reloadTask
+        await initialReload?.value
+
+        XCTAssertEqual(preparedIDs, applications.map(\.id))
+        XCTAssertEqual(store.apps.map(\.id), applications.map(\.id))
+        XCTAssertFalse(store.isReloadingApps)
+        XCTAssertNil(store.reloadTask)
+
+        store.reloadApps(announce: true, persist: false)
+        let announcedReload = store.reloadTask
+        await announcedReload?.value
+        XCTAssertEqual(store.toast?.message, "已重新扫描，共找到 \(applications.count) 个应用")
+    }
+
+    func testCatalogUtilityCommandsUpdateVisibleStateWithoutParallelModels() {
+        withStore { store, applications in
+            guard let first = applications.first, let second = applications.dropFirst().first else {
+                return XCTFail("Missing catalog utility fixtures")
+            }
+            store.setHidden(true, for: first)
+            XCTAssertFalse(store.visibleApps.contains(where: { $0.id == first.id }))
+            XCTAssertTrue(store.allFilteredApps.contains(where: { $0.id == first.id }))
+
+            let positions = [
+                first.id: CGPoint(x: 120, y: 240),
+                second.id: CGPoint(x: 360, y: 480),
+            ]
+            store.updatePositions(positions, persist: false)
+            XCTAssertEqual(store.position(for: first), positions[first.id])
+            XCTAssertEqual(store.position(for: second), positions[second.id])
+
+            let focusToken = store.focusSearchToken
+            let groupToken = store.newGroupToken
+            store.requestFocusSearch()
+            store.requestNewGroup()
+            XCTAssertNotEqual(store.focusSearchToken, focusToken)
+            XCTAssertNotEqual(store.newGroupToken, groupToken)
+
+            store.completeWelcome()
+            XCTAssertTrue(store.state.hasSeenWelcome)
+        }
+    }
+
     func testAliasesAndVisibilityRemainScopedToOneInstalledInstance() {
         withStore { store, applications in
             let family = applications.filter { $0.bundleIdentifier == "com.figma.Desktop" }
@@ -375,6 +434,81 @@ final class LauncherStoreIntegrationTests: XCTestCase {
         }
     }
 
+    func testLayoutModeSetterAndRequestedNavigationShareOnePersistenceSource() {
+        withStore { store, applications, directory in
+            let requestedMode = LockedLayoutMode()
+            let observer = NotificationCenter.default.addObserver(
+                forName: .zizaiLayoutModeRequested,
+                object: nil,
+                queue: nil
+            ) { notification in
+                requestedMode.set(notification.object as? LayoutMode)
+            }
+            defer { NotificationCenter.default.removeObserver(observer) }
+
+            store.layoutMode = .space
+            XCTAssertEqual(store.layoutMode, .space)
+            store.layoutMode = .space
+
+            store.requestLayoutMode(.allApps)
+            XCTAssertEqual(requestedMode.value, .allApps)
+            XCTAssertEqual(store.layoutMode, .allApps)
+            store.flushPendingPersistence()
+
+            let restarted = LauncherStore(stateDirectory: directory, appProvider: { applications })
+            XCTAssertEqual(restarted.layoutMode, .allApps)
+        }
+    }
+
+    func testCorruptPrimaryRecoversFromBackupAndReportsTheRecovery() throws {
+        try withTemporaryDirectory { directory in
+            try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+            let stateURL = directory.appendingPathComponent("布局.json")
+            let backupURL = directory.appendingPathComponent("布局.backup.json")
+            try Data("corrupt-primary".utf8).write(to: stateURL, options: .atomic)
+            var backup = PersistedState()
+            backup.hasSeenWelcome = true
+            backup.layoutMode = .space
+            try JSONEncoder().encode(backup).write(to: backupURL, options: .atomic)
+
+            let store = LauncherStore(
+                stateDirectory: directory,
+                appProvider: { self.makeApplications() }
+            )
+
+            XCTAssertTrue(store.state.hasSeenWelcome)
+            XCTAssertEqual(store.layoutMode, .space)
+            XCTAssertEqual(store.toast?.message, "主布局文件异常，已从安全备份恢复")
+            XCTAssertNoThrow(
+                try JSONDecoder().decode(
+                    PersistedState.self,
+                    from: Data(contentsOf: stateURL)
+                )
+            )
+        }
+    }
+
+    func testCorruptPrimaryWithoutBackupIsPreservedForDiagnosis() throws {
+        try withTemporaryDirectory { directory in
+            try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+            let stateURL = directory.appendingPathComponent("布局.json")
+            try Data("corrupt-primary".utf8).write(to: stateURL, options: .atomic)
+
+            let store = LauncherStore(
+                stateDirectory: directory,
+                appProvider: { self.makeApplications() }
+            )
+            let diagnosticFiles = try FileManager.default.contentsOfDirectory(
+                at: directory,
+                includingPropertiesForKeys: nil
+            ).filter { $0.lastPathComponent.hasPrefix("布局.corrupt-") }
+
+            XCTAssertEqual(diagnosticFiles.count, 1)
+            XCTAssertEqual(try Data(contentsOf: diagnosticFiles[0]), Data("corrupt-primary".utf8))
+            XCTAssertEqual(store.toast?.message, "旧布局文件异常，已保留原文件并创建安全布局")
+        }
+    }
+
     func testStateReconcilerRestoresAUsableFallbackAndPrunesOnlyMissingApps() {
         let applications = makeApplications()
         var state = PersistedState()
@@ -673,11 +807,11 @@ final class LauncherStoreIntegrationTests: XCTestCase {
         }
     }
 
-    private func withTemporaryDirectory(_ body: (URL) -> Void) {
+    private func withTemporaryDirectory(_ body: (URL) throws -> Void) rethrows {
         let directory = FileManager.default.temporaryDirectory
             .appendingPathComponent("zizai-store-xctest-\(UUID().uuidString)", isDirectory: true)
         defer { try? FileManager.default.removeItem(at: directory) }
-        body(directory)
+        try body(directory)
     }
 
     private func makeApplications() -> [AppInfo] {
@@ -742,5 +876,22 @@ final class LauncherStoreIntegrationTests: XCTestCase {
             purpose: purpose,
             group: group
         )
+    }
+}
+
+private final class LockedLayoutMode: @unchecked Sendable {
+    private let lock = NSLock()
+    private var storage: LayoutMode?
+
+    var value: LayoutMode? {
+        lock.lock()
+        defer { lock.unlock() }
+        return storage
+    }
+
+    func set(_ value: LayoutMode?) {
+        lock.lock()
+        storage = value
+        lock.unlock()
     }
 }

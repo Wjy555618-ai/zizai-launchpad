@@ -63,10 +63,12 @@ enum ZizaiLaunchMode: Equatable {
 }
 
 struct ZizaiLaunchConfiguration {
-    static let unitTestingEnvironmentKey = "ZIZAI_UNIT_TEST_HOST"
     static let uiTestingEnvironmentKey = "ZIZAI_UI_TESTING"
     static let uiTestSessionEnvironmentKey = "ZIZAI_UI_TEST_SESSION"
     static let uiTestResetEnvironmentKey = "ZIZAI_UI_TEST_RESET"
+
+    private static let xctestBundlePathEnvironmentKey = "XCTestBundlePath"
+    private static let xctestInjectionTargetEnvironmentKey = "XCInjectBundleInto"
 
     let mode: ZizaiLaunchMode
     let stateDirectory: URL?
@@ -123,11 +125,27 @@ struct ZizaiLaunchConfiguration {
             if environment[uiTestingEnvironmentKey] == "1" {
                 return .uiTesting
             }
-            if environment[unitTestingEnvironmentKey] == "1" {
+            if isApplicationHostedUnitTest(environment: environment) {
                 return .unitTestHost
             }
         #endif
         return .production
+    }
+
+    /// Application-hosted XCTest launches inject the test bundle into the app
+    /// executable. These keys are part of Xcode's own process contract and are
+    /// present before SwiftUI constructs the App. An XCUITest-controlled app is
+    /// not a bundle loader and therefore does not expose either key.
+    private static func isApplicationHostedUnitTest(
+        environment: [String: String]
+    ) -> Bool {
+        guard
+            let bundlePath = environment[xctestBundlePathEnvironmentKey],
+            !bundlePath.isEmpty,
+            let injectionTarget = environment[xctestInjectionTargetEnvironmentKey],
+            !injectionTarget.isEmpty
+        else { return false }
+        return true
     }
 
     private static func prepareStateDirectory(_ directory: URL, reset: Bool) {
