@@ -22,7 +22,7 @@
 
 1. 使用真实作者身份建立首次提交和可追溯历史。
 2. 创建远程仓库，启用 Private Vulnerability Reporting 和必需分支保护。
-3. 推送后确认 GitHub Actions 的构建、分析和真实 XCUITest 全绿。
+3. 推送后确认 GitHub Actions 的托管门槛全绿；它覆盖构建、分析、XCTest、核心覆盖率、完整 XCUITest 编译以及行为、视觉、安全和发布资产审计。真实 XCUITest 必须由同一提交在已授权交互式 macOS 会话执行默认 `verify_release.sh`，不得从托管绿灯推断。
 4. 在同一提交上创建签名 tag 和 Release，并附上校验和。
 
 没有远程记录时，不得把本地源码目录宣称为“已运营的成熟 GitHub 项目”。

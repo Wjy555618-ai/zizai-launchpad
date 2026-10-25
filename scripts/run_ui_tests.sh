@@ -3,6 +3,13 @@ set -euo pipefail
 
 PROJECT_DIR="${0:A:h:h}"
 ARTIFACT_DIR="${ZIZAI_BUILD_DIR:-$PROJECT_DIR/.artifacts.noindex}"
+MODE="execute"
+if [[ "${1:-}" == "--build-only" && "$#" == 1 ]]; then
+  MODE="build-only"
+elif (( $# != 0 )); then
+  echo "用法：run_ui_tests.sh [--build-only]" >&2
+  exit 2
+fi
 NATIVE_ARCH="$(/usr/bin/uname -m)"
 PUBLISHED_RESULT_BUNDLE="$ARTIFACT_DIR/ui-tests.xcresult"
 TEST_LOG="$ARTIFACT_DIR/ui-tests.log"
@@ -26,7 +33,30 @@ cleanup_test_registration() {
 trap cleanup_test_registration EXIT
 
 /bin/mkdir -p "$UI_RUNTIME_ROOT"
-/bin/rm -rf "$RESULT_BUNDLE"
+/bin/rm -rf "$DERIVED_DATA" "$RESULT_BUNDLE"
+
+if [[ "$MODE" == "build-only" ]]; then
+  BUILD_LOG="$ARTIFACT_DIR/ui-tests-build.log"
+  if ! /usr/bin/xcodebuild build-for-testing \
+    -project "$PROJECT_DIR/自在启动台.xcodeproj" \
+    -scheme "自在启动台-UI" \
+    -testPlan "LaunchpadUITests" \
+    -destination "platform=macOS,arch=$NATIVE_ARCH" \
+    -derivedDataPath "$DERIVED_DATA" \
+    -enableCodeCoverage YES >"$BUILD_LOG" 2>&1; then
+    /usr/bin/tail -n 160 "$BUILD_LOG" >&2
+    exit 1
+  fi
+  /usr/bin/python3 "$PROJECT_DIR/scripts/verify_test_log.py" "XCUITest 编译" "$BUILD_LOG"
+  XCTESTRUN_COUNT="$(/usr/bin/find "$DERIVED_DATA/Build/Products" -type f -name '*.xctestrun' | /usr/bin/wc -l | /usr/bin/tr -d ' ')"
+  DECLARED_COUNT="$(/usr/bin/grep -Ec '^[[:space:]]*func[[:space:]]+test[A-Za-z0-9_]*[[:space:]]*\(' "$PROJECT_DIR/Tests/XCUITests/LaunchpadUITests.swift")"
+  if (( XCTESTRUN_COUNT < 1 || DECLARED_COUNT < 1 )); then
+    echo "XCUITest 编译产物不完整：xctestrun=$XCTESTRUN_COUNT, declared=$DECLARED_COUNT" >&2
+    exit 1
+  fi
+  echo "XCUITest 编译契约通过：$DECLARED_COUNT 项当前测试已进入可执行 xctestrun；未声称已执行。"
+  exit 0
+fi
 
 if ! /usr/bin/xcodebuild test \
   -project "$PROJECT_DIR/自在启动台.xcodeproj" \

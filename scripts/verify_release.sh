@@ -3,6 +3,13 @@ set -euo pipefail
 
 PROJECT_DIR="${0:A:h:h}"
 ARTIFACT_DIR="${ZIZAI_BUILD_DIR:-$PROJECT_DIR/.artifacts.noindex}"
+VALIDATION_PROFILE="interactive"
+if [[ "${1:-}" == "--hosted-ci" && "$#" == 1 ]]; then
+  VALIDATION_PROFILE="hosted-ci"
+elif (( $# != 0 )); then
+  echo "用法：verify_release.sh [--hosted-ci]" >&2
+  exit 2
+fi
 NATIVE_ARCH="$(/usr/bin/uname -m)"
 APP_DIR="$ARTIFACT_DIR/自在启动台.app"
 TEST_DERIVED_DATA="$ARTIFACT_DIR/DerivedData-Tests"
@@ -23,6 +30,10 @@ cleanup_test_registration() {
   done
 }
 trap cleanup_test_registration EXIT
+
+# A new attempt must never leave an older all-green evidence file behind. Only
+# the interactive profile recreates it after every required gate has passed.
+/bin/rm -f "$ARTIFACT_DIR/quality-evidence.json"
 
 /usr/bin/xcrun swift-format lint --strict --recursive "$PROJECT_DIR/Sources" "$PROJECT_DIR/Tests"
 /bin/zsh "$PROJECT_DIR/scripts/build.sh" >/dev/null
@@ -68,9 +79,16 @@ fi
 /bin/zsh "$PROJECT_DIR/scripts/verify_coverage.sh" "$TEST_RESULT_BUNDLE"
 cleanup_test_registration
 
-# The release gate executes the real application through XCTest. Compiling the
-# UI target is never accepted as end-to-end evidence.
-/bin/zsh "$PROJECT_DIR/scripts/run_ui_tests.sh"
+# macOS UI automation needs a trusted, interactive Accessibility session.
+# Developer workstations execute the real application and enforce UI coverage;
+# ephemeral GitHub-hosted desktops prove that the exact UI suite still builds,
+# while the remaining deterministic gates continue below. Build-only evidence
+# is intentionally never promoted to an XCUITest pass or quality-evidence.json.
+if [[ "$VALIDATION_PROFILE" == "interactive" ]]; then
+  /bin/zsh "$PROJECT_DIR/scripts/run_ui_tests.sh"
+else
+  /bin/zsh "$PROJECT_DIR/scripts/run_ui_tests.sh" --build-only
+fi
 
 ENTITLEMENTS="$(/usr/bin/codesign -d --entitlements :- "$APP_DIR" 2>/dev/null)"
 [[ "$ENTITLEMENTS" == *"com.apple.security.app-sandbox"* ]]
@@ -157,7 +175,11 @@ fi
 /usr/bin/grep -q "SMAppService.mainApp" "$PROJECT_DIR/Sources/LoginItemSettings.swift"
 /usr/bin/grep -q "try service.unregister()" "$PROJECT_DIR/Sources/LoginItemSettings.swift"
 
-/usr/bin/python3 "$PROJECT_DIR/scripts/generate_quality_evidence.py" "$ARTIFACT_DIR"
-
-echo "工程门槛通过：构建、静态分析、临时签名、XCTest、真实 XCUITest、沙盒、隐私清单、交互模型、截图规格和图标资产均有效。"
+if [[ "$VALIDATION_PROFILE" == "interactive" ]]; then
+  /usr/bin/python3 "$PROJECT_DIR/scripts/generate_quality_evidence.py" "$ARTIFACT_DIR"
+  echo "完整交互式工程门槛通过：构建、静态分析、临时签名、XCTest、真实 XCUITest、沙盒、隐私清单、交互模型、截图规格和图标资产均有效。"
+else
+  echo "GitHub 托管工程门槛通过：构建、静态分析、XCTest、XCUITest 编译、沙盒、隐私、交互、视觉和发布资产均有效。"
+  echo "边界：托管配置没有生成真实 XCUITest 通过结论；发布仍要求受信任交互式 macOS 会话执行默认门槛。"
+fi
 echo "注意：这不代替真实用户研究、专项硬件矩阵或 Apple 人工审核。"

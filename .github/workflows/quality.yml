@@ -16,11 +16,9 @@ concurrency:
 jobs:
   verify:
     name: Xcode ${{ matrix.xcode }}
-    # The Intel runner is a deliberate complement to the physical Apple
-    # Silicon development machine: it exercises the other Universal 2
-    # architecture and provides the complete virtual rendering stack needed
-    # by AppKit/SwiftUI composition tests. The macOS 26 arm64 runner currently
-    # terminates those tests inside RenderBox before XCTest can report results.
+    # The Intel runner deliberately complements the physical Apple Silicon
+    # development machine and exercises the other Universal 2 architecture.
+    # Hosted jobs compile the UI suite but do not claim an interactive run.
     runs-on: macos-26-intel
     timeout-minutes: 30
     strategy:
@@ -44,5 +42,10 @@ jobs:
           xcodebuild -version
           swift --version
 
-      - name: Run release quality gate
-        run: ./scripts/verify_release.sh
+      # GitHub-hosted macOS is an ephemeral, non-interactive validation host.
+      # It runs every deterministic release gate and builds the complete UI
+      # suite, but never converts a missing trusted Accessibility session into
+      # a fake XCUITest pass. The default local gate remains the required real
+      # UI execution path before release.
+      - name: Run hosted quality gate
+        run: ./scripts/verify_release.sh --hosted-ci

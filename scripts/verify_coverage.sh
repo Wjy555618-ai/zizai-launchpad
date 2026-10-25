@@ -156,4 +156,4 @@ require_at_least "应用目录持久授权" "Sources/ApplicationFolderAccess.swi
 require_at_least "交互几何" "Sources/InteractionGeometry.swift" 90
 require_at_least "空间布局引擎" "Sources/SpatialLayoutEngine.swift" 80
 
-echo "覆盖率硬门槛通过；声明式界面不靠 body 展开抬高数字，而由真实 XCUITest 与深浅色视觉渲染门槛验收。"
+echo "覆盖率硬门槛通过；声明式界面不靠 body 展开抬高数字，真实 XCUITest 与深浅色视觉渲染由各自独立门槛验收。"

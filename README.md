@@ -97,7 +97,7 @@ xcodebuild test \
 ./scripts/run_ui_tests.sh
 ```
 
-`verify_release.sh` 与 CI 的统一 Release 门槛都会调用该脚本；编译成功不能替代运行通过。当前发布结论及仍需账号或硬件完成的证据见 [RELEASE_READINESS.md](RELEASE_READINESS.md)。
+默认的 `verify_release.sh` 会调用该脚本并要求真实执行通过；编译成功不能替代运行通过。GitHub 托管 macOS 没有可由仓库建立的受信任交互式辅助功能会话，因此远程工作流使用显式的 `--hosted-ci` 配置：执行所有确定性门槛并完整编译 XCUITest，但不会把编译写成端到端通过，也不会生成本地完整质量证据。当前发布结论及仍需账号或硬件完成的证据见 [RELEASE_READINESS.md](RELEASE_READINESS.md)。
 
 代码风格检查：
 
@@ -136,7 +136,7 @@ handoff/       图标来源、兼容性调查与当前验证入口（当前视�
 
 - 产品当前以简体中文为主要语言；代码允许后续接入 String Catalog，但当前不宣称已完成多语言产品验收。
 - 自动化证据证明已执行的构建、行为和性能边界，不代替真实用户研究、Apple 审核或安全专业认证。
-- `自在启动台-UI` 是独立界面自动化方案；常规 `自在启动台` 方案不会启动 UI Test Runner。`run_ui_tests.sh`、本地 Release 总门槛与 CI 会真实执行它，宿主自动化连接失败必须报告为失败，不能降级成“已通过”。
+- `自在启动台-UI` 是独立界面自动化方案；常规 `自在启动台` 方案不会启动 UI Test Runner。`run_ui_tests.sh` 与默认本地 Release 总门槛会在已授权桌面真实执行它，宿主自动化连接失败必须报告为失败。GitHub 托管配置只证明同一测试套件可编译并继续执行其余门槛，不能降级或冒充为“XCUITest 已通过”。
 
 ## 发布状态
 
