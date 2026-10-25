@@ -26,6 +26,13 @@ jobs:
       - name: Check out source
         uses: actions/checkout@v6
 
+      # Pin the exact stable toolchain instead of inheriting the runner image's
+      # moving default. Xcode 26.6 currently crashes in Swift IR generation for
+      # this warning-free Universal 2 Release build before emitting a source
+      # diagnostic; Xcode 26.5 remains installed on the GA macOS 26 image.
+      - name: Select stable Xcode
+        run: sudo xcode-select -s /Applications/Xcode_26.5.app/Contents/Developer
+
       - name: Show toolchain
         run: |
           sw_vers
