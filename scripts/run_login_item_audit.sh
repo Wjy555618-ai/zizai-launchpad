@@ -3,17 +3,14 @@ set -euo pipefail
 
 PROJECT_DIR="${0:A:h:h}"
 ARTIFACT_DIR="${ZIZAI_BUILD_DIR:-$PROJECT_DIR/.artifacts.noindex}"
-AUDIT_ARCH="${ZIZAI_AUDIT_ARCH:-arm64}"
-TEST_BINARY="$ARTIFACT_DIR/LoginItemSettingsAudit-$AUDIT_ARCH"
-XCRUN_BIN="${ZIZAI_XCRUN_PATH:-/usr/bin/xcrun}"
-SWIFTC="$($XCRUN_BIN --find swiftc)"
-SDK="$($XCRUN_BIN --sdk macosx --show-sdk-path)"
+source "$PROJECT_DIR/scripts/audit_toolchain.zsh"
+TEST_BINARY="$ARTIFACT_DIR/LoginItemSettingsAudit-$ZIZAI_AUDIT_ARCH"
 
 mkdir -p "$ARTIFACT_DIR"
 
-"$SWIFTC" \
-  -sdk "$SDK" \
-  -target "$AUDIT_ARCH-apple-macosx13.0" \
+"$ZIZAI_SWIFTC" \
+  -sdk "$ZIZAI_SDK" \
+  -target "$ZIZAI_AUDIT_TARGET" \
   -warnings-as-errors \
   -framework AppKit \
   -framework Combine \
@@ -26,11 +23,8 @@ mkdir -p "$ARTIFACT_DIR"
   "$PROJECT_DIR/Sources/ApplicationFolderAccess.swift" \
   "$PROJECT_DIR/Sources/LaunchPresentation.swift" \
   "$PROJECT_DIR/Sources/LoginItemSettings.swift" \
+  "$PROJECT_DIR/Tests/XCTest/TestApplicationFolderAuthorizationService.swift" \
   "$PROJECT_DIR/Tests/LoginItemSettingsAudit.swift" \
   -o "$TEST_BINARY"
 
-if [[ "$AUDIT_ARCH" == "x86_64" && "$(/usr/bin/uname -m)" == "arm64" ]]; then
-  /usr/bin/arch -x86_64 "$TEST_BINARY"
-else
-  "$TEST_BINARY"
-fi
+zizai_run_audit_binary "$TEST_BINARY"

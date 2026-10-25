@@ -3,17 +3,15 @@ set -euo pipefail
 
 PROJECT_DIR="${0:A:h:h}"
 ARTIFACT_DIR="${ZIZAI_BUILD_DIR:-$PROJECT_DIR/.artifacts.noindex}"
-TEST_BINARY="$ARTIFACT_DIR/StoreBehaviorAudit"
-XCRUN_BIN="${ZIZAI_XCRUN_PATH:-/usr/bin/xcrun}"
-SWIFTC="$($XCRUN_BIN --find swiftc)"
-SDK="$($XCRUN_BIN --sdk macosx --show-sdk-path)"
+source "$PROJECT_DIR/scripts/audit_toolchain.zsh"
+TEST_BINARY="$ARTIFACT_DIR/StoreBehaviorAudit-$ZIZAI_AUDIT_ARCH"
 source "$PROJECT_DIR/scripts/audit_source_manifest.zsh"
 
 mkdir -p "$ARTIFACT_DIR"
 
-"$SWIFTC" \
-  -sdk "$SDK" \
-  -target arm64-apple-macosx13.0 \
+"$ZIZAI_SWIFTC" \
+  -sdk "$ZIZAI_SDK" \
+  -target "$ZIZAI_AUDIT_TARGET" \
   -warnings-as-errors \
   -framework AppKit \
   -framework Combine \
@@ -21,4 +19,4 @@ mkdir -p "$ARTIFACT_DIR"
   "$PROJECT_DIR/Tests/StoreBehaviorAudit.swift" \
   -o "$TEST_BINARY"
 
-"$TEST_BINARY"
+zizai_run_audit_binary "$TEST_BINARY"

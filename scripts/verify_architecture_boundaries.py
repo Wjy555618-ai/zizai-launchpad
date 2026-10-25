@@ -17,6 +17,20 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 SOURCES = ROOT / "Sources"
 PROJECT = ROOT / "自在启动台.xcodeproj" / "project.pbxproj"
 MANIFEST = ROOT / "scripts" / "audit_source_manifest.zsh"
+AUDIT_TOOLCHAIN = ROOT / "scripts" / "audit_toolchain.zsh"
+
+AUDIT_RUNNERS = (
+    "run_interaction_tests.sh",
+    "run_store_behavior_audit.sh",
+    "run_async_work_performance_audit.sh",
+    "run_canvas_interaction_performance_audit.sh",
+    "run_tab_content_performance_audit.sh",
+    "run_tab_switch_performance_audit.sh",
+    "run_tooltip_layering_audit.sh",
+    "run_visual_render_audit.sh",
+    "run_scanner_audit.sh",
+    "run_login_item_audit.sh",
+)
 
 STORE_MODULE_LIMITS = {
     "LauncherStore.swift": 320,
@@ -72,6 +86,18 @@ def main() -> None:
         fail("旧源码形状验收器 verify_ux.py 仍未清理")
     if (ROOT / ".spec-to-demo").exists():
         fail("失效的平行验收事实源 .spec-to-demo 重新出现")
+
+    toolchain = AUDIT_TOOLCHAIN.read_text(encoding="utf-8")
+    if 'ZIZAI_AUDIT_ARCH="${ZIZAI_AUDIT_ARCH:-$ZIZAI_HOST_ARCH}"' not in toolchain:
+        fail("独立审计没有默认跟随当前主机架构")
+    for runner_name in AUDIT_RUNNERS:
+        runner = (ROOT / "scripts" / runner_name).read_text(encoding="utf-8")
+        if 'source "$PROJECT_DIR/scripts/audit_toolchain.zsh"' not in runner:
+            fail(f"{runner_name} 绕过共享审计工具链")
+        if "-target arm64-apple" in runner or "-target x86_64-apple" in runner:
+            fail(f"{runner_name} 硬编码了审计产物架构")
+        if "zizai_run_audit_binary" not in runner:
+            fail(f"{runner_name} 没有通过共享架构执行器启动产物")
 
     print(
         "架构边界验收通过：单一状态聚合根、五个职责模块、值语义撤销历史，"

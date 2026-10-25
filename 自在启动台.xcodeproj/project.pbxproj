@@ -50,6 +50,7 @@
 		B20000000000000000000108 /* ApplicationFolderAccessTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000009 /* ApplicationFolderAccessTests.swift */; };
 		B20000000000000000000109 /* AppScannerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2000000000000000000000A /* AppScannerTests.swift */; };
 		B2000000000000000000010A /* LaunchPresentationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2000000000000000000000B /* LaunchPresentationTests.swift */; };
+		B2000000000000000000010B /* TestApplicationFolderAuthorizationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2000000000000000000000C /* TestApplicationFolderAuthorizationService.swift */; };
 		C30000000000000000000101 /* LaunchpadUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C30000000000000000000001 /* LaunchpadUITests.swift */; };
 /* End PBXBuildFile section */
 
@@ -120,6 +121,7 @@
 		B20000000000000000000009 /* ApplicationFolderAccessTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApplicationFolderAccessTests.swift; sourceTree = "<group>"; };
 		B2000000000000000000000A /* AppScannerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppScannerTests.swift; sourceTree = "<group>"; };
 		B2000000000000000000000B /* LaunchPresentationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LaunchPresentationTests.swift; sourceTree = "<group>"; };
+		B2000000000000000000000C /* TestApplicationFolderAuthorizationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestApplicationFolderAuthorizationService.swift; sourceTree = "<group>"; };
 		C30000000000000000000001 /* LaunchpadUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LaunchpadUITests.swift; sourceTree = "<group>"; };
 		C30000000000000000000002 /* 自在启动台UITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "自在启动台UITests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -232,6 +234,7 @@
 				B20000000000000000000004 /* LoginItemManagerTests.swift */,
 				B20000000000000000000007 /* LauncherStoreIntegrationTests.swift */,
 				B20000000000000000000005 /* StatePersistenceTests.swift */,
+				B2000000000000000000000C /* TestApplicationFolderAuthorizationService.swift */,
 				B20000000000000000000006 /* TooltipPresentationTests.swift */,
 				B20000000000000000000008 /* ViewLayoutPolicyTests.swift */,
 			);
@@ -423,6 +426,7 @@
 				B2000000000000000000010A /* LaunchPresentationTests.swift in Sources */,
 				B20000000000000000000103 /* LoginItemManagerTests.swift in Sources */,
 				B20000000000000000000104 /* StatePersistenceTests.swift in Sources */,
+				B2000000000000000000010B /* TestApplicationFolderAuthorizationService.swift in Sources */,
 				B20000000000000000000105 /* TooltipPresentationTests.swift in Sources */,
 				B20000000000000000000106 /* LauncherStoreIntegrationTests.swift in Sources */,
 				B20000000000000000000107 /* ViewLayoutPolicyTests.swift in Sources */,

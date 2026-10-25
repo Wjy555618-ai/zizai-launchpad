@@ -190,7 +190,11 @@ enum LoginItemSettingsAudit {
         }
 
         let scannedRoots = LockedValue<[URL]>([])
-        let manager = ApplicationFolderAccess(storageDirectory: root) { roots in
+        let authorizationService = TestApplicationFolderAuthorizationService()
+        let manager = ApplicationFolderAccess(
+            storageDirectory: root,
+            authorizationService: authorizationService
+        ) { roots in
             scannedRoots.set(roots)
             return []
         }
@@ -203,7 +207,10 @@ enum LoginItemSettingsAudit {
         )
 
         let restoredRoots = LockedValue<[URL]>([])
-        let restarted = ApplicationFolderAccess(storageDirectory: root) { roots in
+        let restarted = ApplicationFolderAccess(
+            storageDirectory: root,
+            authorizationService: authorizationService
+        ) { roots in
             restoredRoots.set(roots)
             return []
         }
@@ -236,7 +243,10 @@ enum LoginItemSettingsAudit {
         }
 
         let rootsReceived = LockedValue<[URL]>([])
-        let manager = ApplicationFolderAccess(storageDirectory: root) { roots in
+        let manager = ApplicationFolderAccess(
+            storageDirectory: root,
+            authorizationService: TestApplicationFolderAuthorizationService()
+        ) { roots in
             rootsReceived.set(roots)
             return []
         }
