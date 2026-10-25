@@ -15,24 +15,27 @@ concurrency:
 
 jobs:
   verify:
-    name: Build, test, analyze
-    # Release gates must run on a generally available image. The xcode-27
-    # image is still a GitHub public preview and its virtual GPU can crash
-    # AppKit/SwiftUI rendering before XCTest can report an assertion.
-    runs-on: macos-26
+    name: Xcode ${{ matrix.xcode }}
+    # The Intel runner is a deliberate complement to the physical Apple
+    # Silicon development machine: it exercises the other Universal 2
+    # architecture and provides the complete virtual rendering stack needed
+    # by AppKit/SwiftUI composition tests. The macOS 26 arm64 runner currently
+    # terminates those tests inside RenderBox before XCTest can report results.
+    runs-on: macos-26-intel
     timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        xcode: ["26.2", "26.6"]
 
     steps:
       - name: Check out source
         uses: actions/checkout@v6
 
-      # Pin the exact stable toolchain instead of inheriting the runner image's
-      # moving default. The Swift 6.3 toolchains in Xcode 26.5 and 26.6 crash in
-      # IR generation for this warning-free Universal 2 Release build before
-      # emitting a source diagnostic. Xcode 26.2 is the stable Swift 6.2 floor
-      # installed on the GA macOS 26 image.
+      # Verify both the supported stable floor and the current stable toolchain
+      # instead of inheriting a moving runner default.
       - name: Select stable Xcode
-        run: sudo xcode-select -s /Applications/Xcode_26.2.app/Contents/Developer
+        run: sudo xcode-select -s /Applications/Xcode_${{ matrix.xcode }}.app/Contents/Developer
 
       - name: Show toolchain
         run: |
