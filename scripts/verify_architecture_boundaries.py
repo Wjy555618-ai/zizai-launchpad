@@ -113,6 +113,10 @@ def main() -> None:
         fail("界面运行时审计绕过共享架构工具链")
     if '"${ZIZAI_AUDIT_SOURCE_FILES[@]}"' not in ui_harness:
         fail("界面运行时审计没有编译统一产品源图")
+    if "-whole-module-optimization" not in ui_harness:
+        fail("界面运行时审计没有使用有界的整模块发布编译")
+    if 'build_started_at="$(/bin/date +%s)"' not in ui_harness:
+        fail("界面运行时审计的发布编译阶段不可观测")
     if "zizai_run_audit_binary" not in ui_harness:
         fail("界面运行时审计没有通过共享架构执行器启动")
     for runner_name in UI_RUNTIME_AUDIT_RUNNERS:
@@ -123,6 +127,8 @@ def main() -> None:
             fail(f"{runner_name} 重复编译了完整 SwiftUI 产品源图")
         if "zizai_run_ui_runtime_audit" not in runner:
             fail(f"{runner_name} 没有通过统一界面运行时入口执行")
+        if "|| exit $?" not in runner:
+            fail(f"{runner_name} 没有显式传播统一审计入口的失败状态")
 
     release_gate = RELEASE_GATE.read_text(encoding="utf-8")
     if "verify_release_core.sh" not in release_gate or "verify_release_runtime.sh" not in release_gate:
@@ -155,7 +161,7 @@ def main() -> None:
 
     print(
         "架构边界验收通过：单一状态聚合根、五个职责模块、值语义撤销历史，"
-        "界面审计复用单一优化产物，且没有旧源码形状验收器或平行事实源。"
+        "界面审计复用单一整模块优化产物，且没有旧源码形状验收器或平行事实源。"
     )
 
 

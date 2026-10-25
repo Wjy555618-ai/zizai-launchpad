@@ -47,11 +47,22 @@ zizai_ensure_ui_runtime_audit_binary() {
   local temporary_binary="$ZIZAI_UI_RUNTIME_AUDIT_BINARY.tmp"
   local temporary_stamp="$ZIZAI_UI_RUNTIME_AUDIT_STAMP.tmp"
   /bin/rm -f "$temporary_binary" "$temporary_stamp"
+
+  # A plain optimized `swiftc` invocation treats every source as a primary
+  # file. For this complete SwiftUI graph that repeatedly parses and
+  # type-checks the same module and can spend longer than the hosted runner's
+  # entire quality budget before producing an executable. This audit is a
+  # single program, so whole-module optimization is both the truthful Release
+  # compilation model and the bounded one: the graph is analysed once and
+  # then emitted as one product.
+  print -r -- "正在构建统一界面运行时审计产物（$ZIZAI_AUDIT_ARCH，整模块优化）…"
+  local build_started_at="$(/bin/date +%s)"
   "$ZIZAI_SWIFTC" \
     -sdk "$ZIZAI_SDK" \
     -target "$ZIZAI_AUDIT_TARGET" \
     -D ZIZAI_VISUAL_AUDIT \
     -O \
+    -whole-module-optimization \
     -warnings-as-errors \
     -framework AppKit \
     -framework SwiftUI \
@@ -59,6 +70,8 @@ zizai_ensure_ui_runtime_audit_binary() {
     "${ZIZAI_AUDIT_SOURCE_FILES[@]}" \
     "${ZIZAI_UI_RUNTIME_AUDIT_FILES[@]}" \
     -o "$temporary_binary"
+  local build_finished_at="$(/bin/date +%s)"
+  print -r -- "统一界面运行时审计产物构建完成：$(( build_finished_at - build_started_at )) 秒。"
   print -r -- "$expected_digest" >"$temporary_stamp"
   /bin/mv -f "$temporary_binary" "$ZIZAI_UI_RUNTIME_AUDIT_BINARY"
   /bin/mv -f "$temporary_stamp" "$ZIZAI_UI_RUNTIME_AUDIT_STAMP"
