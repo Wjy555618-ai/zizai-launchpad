@@ -39,6 +39,7 @@
 6. 为每个 Group 启用 Liquid Glass。以中等透明度、克制的高光和清晰轮廓为起点，避免强模糊和过重阴影。
 7. 分别预览 macOS 的 Default、Dark 及工具中提供的 Mono/Clear/Tinted 外观，重点检查 16px、32px、64px 和 Dock 尺寸。
 8. 保存为 `AppIcon.icon`。
+   - Icon Composer 27 可能在 `icon.json` 顶层重新写入非空 `features`。该标记会令稳定版 Xcode 26 的 `actool` 崩溃，但删除标记不会删除各 Group 自身的折射、透明度和阴影参数。保存后必须运行 `verify_package.sh`，并在提交前移除该顶层标记。
 9. 将 `AppIcon.icon` 加入 Xcode 工程；在 Target 的 `General > App Icons and Launch Screen` 中把 App Icon 设为 `AppIcon`。
 10. 在真实 Mac 上检查 Finder、Dock、Spotlight、应用内标题区和 App Store 归档预览。
 

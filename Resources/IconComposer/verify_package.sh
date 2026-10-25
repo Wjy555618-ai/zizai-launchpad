@@ -7,6 +7,26 @@ cd "$ROOT"
 /usr/bin/shasum -a 256 -c SHA256SUMS >/dev/null
 /usr/bin/python3 -m json.tool ICON_COMPOSER_MANIFEST.json >/dev/null
 
+# Icon Composer 27 writes a non-empty top-level `features` gate. Stable Xcode
+# 26 understands the material properties themselves but crashes in actool when
+# that preview-only gate is present. Keep one shipping .icon document that both
+# stable and next-generation toolchains can compile.
+/usr/bin/python3 - "../AppIcon.icon/icon.json" <<'PY'
+import json
+from pathlib import Path
+import sys
+
+icon = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
+if icon.get("features"):
+    raise SystemExit(
+        "AppIcon.icon contains the Icon Composer 27 top-level features gate; "
+        "remove it before release so stable Xcode 26 actool can compile the icon."
+    )
+groups = icon.get("groups", [])
+if len(groups) != 4 or any(len(group.get("layers", [])) != 1 for group in groups):
+    raise SystemExit("AppIcon.icon must retain four independent one-layer groups.")
+PY
+
 EXPECTED_SVGS=(
   00-background-reference.svg
   01-red-square.svg

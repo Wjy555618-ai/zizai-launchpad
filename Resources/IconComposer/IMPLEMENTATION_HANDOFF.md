@@ -18,7 +18,8 @@
 4. 为四个 Group 使用一致且克制的 Liquid Glass 参数，不添加与品牌无关的装饰。
 5. 验证 macOS Default、Dark、Mono/Clear/Tinted，以及 16px、32px、64px、Finder 和 Dock 尺寸。
 6. 确认 Xcode Target 仅使用 `AppIcon.icon` 作为正式主图标来源。
-7. 在真实 Mac 上构建、安装并刷新系统图标缓存后完成可见验收。
+7. 若使用 Icon Composer 27 保存，运行 `verify_package.sh` 检查并移除 `icon.json` 顶层非空 `features` 标记；稳定版 Xcode 26 会因该预览标记崩溃，而各 Group 的正式材质参数必须保留。
+8. 在真实 Mac 上构建、安装并刷新系统图标缓存后完成可见验收。
 
 交付记录至少应包含：
 
