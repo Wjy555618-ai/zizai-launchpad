@@ -79,7 +79,43 @@ enum VisualRenderAudit {
 
         let root: AnyView
         let canvasSize: CGSize
-        if layoutArgument == "tooltipSpacing" {
+        if layoutArgument == "sheetWelcome" {
+            root = AnyView(
+                WelcomeSheet(onStart: {})
+                    .preferredColorScheme(auditColorScheme)
+            )
+            canvasSize = CGSize(width: 720, height: 460)
+        } else if layoutArgument == "sheetHelp" {
+            root = AnyView(
+                HelpSheet()
+                    .preferredColorScheme(auditColorScheme)
+            )
+            canvasSize = CGSize(width: 650, height: 650)
+        } else if layoutArgument == "sheetGroupEditor" {
+            root = AnyView(
+                GroupEditorSheet(
+                    draft: GroupDraft(
+                        editingGroupID: nil,
+                        name: "设计协作",
+                        tint: .indigo,
+                        center: .zero
+                    ),
+                    onSave: { _, _ in }
+                )
+                .preferredColorScheme(auditColorScheme)
+            )
+            canvasSize = CGSize(width: 460, height: 420)
+        } else if layoutArgument == "sheetAliasEditor" {
+            guard let application = store.apps.first else {
+                fail("别名编辑视觉验收缺少确定性应用素材")
+            }
+            root = AnyView(
+                AliasEditor(app: application, draft: .constant("工作入口"))
+                    .environmentObject(store)
+                    .preferredColorScheme(auditColorScheme)
+            )
+            canvasSize = CGSize(width: 440, height: 320)
+        } else if layoutArgument == "tooltipSpacing" {
             root = AnyView(
                 AppTooltipSpacingAuditView()
                     .preferredColorScheme(auditColorScheme)
@@ -382,6 +418,16 @@ enum VisualRenderAudit {
         layoutArgument: String,
         appearanceArgument: String
     ) {
+        if layoutArgument.hasPrefix("sheet") {
+            validateSheetSnapshot(
+                bitmap,
+                canvasSize: canvasSize,
+                layoutArgument: layoutArgument,
+                appearanceArgument: appearanceArgument
+            )
+            return
+        }
+
         var topRegions: [(String, CGRect)] = [
             ("品牌区", CGRect(x: 20, y: 4, width: 210, height: 76)),
             ("顶部操作区", CGRect(x: canvasSize.width - 190, y: 4, width: 180, height: 76)),
@@ -483,6 +529,79 @@ enum VisualRenderAudit {
             )
         default:
             break
+        }
+    }
+
+    /// Product sheets are rendered by the standalone visual harness rather
+    /// than application-hosted XCTest. That keeps SwiftUI/AppKit composition
+    /// in the same deterministic layer as the primary surfaces and avoids
+    /// coupling unit tests to a hosted desktop session.
+    private static func validateSheetSnapshot(
+        _ bitmap: NSBitmapImageRep,
+        canvasSize: CGSize,
+        layoutArgument: String,
+        appearanceArgument: String
+    ) {
+        let contentRect = CGRect(
+            x: 18,
+            y: 18,
+            width: canvasSize.width - 36,
+            height: canvasSize.height - 36
+        )
+        let contrast = luminanceRange(
+            inTopOriginRect: contentRect,
+            bitmap: bitmap,
+            canvasSize: canvasSize
+        )
+        guard contrast >= 0.28 else {
+            fail(
+                "\(sheetAuditName(layoutArgument))结构对比度异常（亮度范围 \(String(format: "%.3f", contrast))）"
+            )
+        }
+
+        let semanticInkRect: CGRect
+        switch layoutArgument {
+        case "sheetWelcome":
+            semanticInkRect = CGRect(x: 210, y: 125, width: 300, height: 90)
+        case "sheetHelp":
+            semanticInkRect = CGRect(x: 20, y: 18, width: 500, height: 84)
+        case "sheetGroupEditor":
+            semanticInkRect = CGRect(x: 76, y: 18, width: 350, height: 118)
+        case "sheetAliasEditor":
+            semanticInkRect = CGRect(x: 84, y: 18, width: 330, height: 118)
+        default:
+            semanticInkRect = contentRect
+        }
+
+        let expectsDarkInk = appearanceArgument == "light"
+        let inkRatio = pixelRatio(
+            inTopOriginRect: semanticInkRect,
+            bitmap: bitmap,
+            canvasSize: canvasSize,
+            where: { luminance in
+                expectsDarkInk ? luminance <= 0.48 : luminance >= 0.72
+            }
+        )
+        guard inkRatio >= 0.018 else {
+            let expected = expectsDarkInk ? "深色" : "浅色"
+            fail(
+                "\(sheetAuditName(layoutArgument))没有使用\(expected)语义前景（有效像素占比 \(String(format: "%.3f", inkRatio))）"
+            )
+        }
+    }
+
+    private static func sheetAuditName(_ layoutArgument: String) -> String {
+        switch layoutArgument {
+        case "sheetWelcome":
+            return "欢迎页"
+        case "sheetHelp":
+            return "帮助页"
+        case "sheetGroupEditor":
+            return "分组编辑页"
+        case "sheetAliasEditor":
+            return "别名编辑页"
+        default:
+            return "产品弹窗"
         }
     }
 

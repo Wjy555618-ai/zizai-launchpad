@@ -178,61 +178,6 @@ private struct AppTooltipPanelContent: View {
     }
 }
 
-final class AppTooltipAnchorNSView: NSView {
-    var tooltipID = ""
-    var tooltipText = ""
-    var isTooltipPresented = false
-
-    override func hitTest(_ point: NSPoint) -> NSView? { nil }
-
-    override func layout() {
-        super.layout()
-        guard isTooltipPresented else { return }
-        let id = tooltipID
-        DispatchQueue.main.async { [weak self] in
-            guard let self, self.isTooltipPresented, self.tooltipID == id else { return }
-            AppTooltipPanelController.shared.updatePosition(id: id)
-        }
-    }
-}
-
-struct AppTooltipWindowAnchor: NSViewRepresentable {
-    let id: String
-    let text: String
-    let isPresented: Bool
-
-    func makeNSView(context: Context) -> AppTooltipAnchorNSView {
-        let view = AppTooltipAnchorNSView(frame: .zero)
-        view.wantsLayer = false
-        return view
-    }
-
-    func updateNSView(_ nsView: AppTooltipAnchorNSView, context: Context) {
-        nsView.tooltipID = id
-        nsView.tooltipText = text
-        nsView.isTooltipPresented = isPresented
-        let expectedRevision = AppTooltipPanelController.shared.currentPresentationRevision
-        DispatchQueue.main.async {
-            guard nsView.tooltipID == id else { return }
-            if isPresented {
-                AppTooltipPanelController.shared.show(
-                    id: id,
-                    text: text,
-                    anchorView: nsView,
-                    expectedRevision: expectedRevision
-                )
-            } else {
-                AppTooltipPanelController.shared.hide(id: id)
-            }
-        }
-    }
-
-    static func dismantleNSView(_ nsView: AppTooltipAnchorNSView, coordinator: ()) {
-        nsView.isTooltipPresented = false
-        AppTooltipPanelController.shared.hide(id: nsView.tooltipID)
-    }
-}
-
 /// Anchors the tooltip by geometry instead of a fragile alignment-guide
 /// offset. The transparent icon-sized spacer makes the bubble's tail end at a
 /// fixed clear gap above the artwork for every icon size and canvas zoom.

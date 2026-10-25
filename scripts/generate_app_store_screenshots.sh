@@ -30,29 +30,15 @@ render_screenshot "04-search" storeSearch dark
 
 SCREENSHOT_SOURCES=(
   "Tests/VisualRenderAudit.swift"
-  "Sources/Views.swift"
-  "Sources/AllAppsViews.swift"
-  "Sources/SearchViews.swift"
-  "Sources/CanvasView.swift"
-  "Sources/LibraryViews.swift"
-  "Sources/DesignSystem.swift"
-  "Sources/Compatibility.swift"
-  "Sources/Models.swift"
-  "Sources/LauncherStateReconciler.swift"
-  "Sources/LauncherStore.swift"
-  "Sources/LauncherStateHistory.swift"
-  "Sources/LauncherStore+Canvas.swift"
-  "Sources/LauncherStore+Catalog.swift"
-  "Sources/LauncherStore+Groups.swift"
-  "Sources/LauncherStore+Library.swift"
-  "Sources/ApplicationSearchPolicy.swift"
-  "Sources/InteractionGeometry.swift"
-  "Sources/SpatialLayoutEngine.swift"
   "Resources/BrandMarkForeground.svg"
   "scripts/run_visual_render_audit.sh"
   "scripts/audit_source_manifest.zsh"
   "scripts/verify_security_capabilities.py"
 )
+source "$PROJECT_DIR/scripts/audit_source_manifest.zsh"
+for source_file in "${ZIZAI_AUDIT_SOURCE_FILES[@]}"; do
+  SCREENSHOT_SOURCES+=("${source_file#$PROJECT_DIR/}")
+done
 (
   cd "$PROJECT_DIR"
   /usr/bin/shasum -a 256 "${SCREENSHOT_SOURCES[@]}" > \

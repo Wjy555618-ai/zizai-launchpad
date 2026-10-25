@@ -61,7 +61,7 @@ Catalog   Library   Groups   Canvas
 
 ## 验证策略
 
-`Tests/XCTest/` 是标准 Xcode 测试 Target，用于快速、可定位、可在 CI 中直接产生 `.xcresult` 的原生回归。它覆盖应用身份与搜索语义、真实 Store 多实例与跨组操作、画布安全区和缩放、空间碰撞与无障碍等价事务、换序完整性、登录项状态、气泡生命周期、持久化备份，以及浅色/深色下三类主视图与关键 sheet 的真实 AppKit 组合。该 Target 明确串行执行：macOS App 宿主、窗口与全局 AppKit 生命周期不能被多个测试进程安全争用，确定性优先于几秒钟的并发收益。
+`Tests/XCTest/` 是标准 Xcode 测试 Target，用于快速、可定位、可在 CI 中直接产生 `.xcresult` 的原生回归。它覆盖应用身份与搜索语义、真实 Store 多实例与跨组操作、画布安全区和缩放、空间碰撞与无障碍等价事务、换序完整性、登录项状态、气泡生命周期、异步持久化顺序与备份。该 Target 明确串行执行：macOS App 宿主与全局 AppKit 生命周期不能被多个测试进程安全争用，确定性优先于几秒钟的并发收益。主视图和关键 sheet 的 SwiftUI/AppKit 组合统一由独立视觉渲染程序在深浅色下执行，并由 XCUITest 验证真实用户路径；应用宿主 XCTest 不再创建窗口来冒充视觉或端到端验收。
 
 三种进程启动模式由 `ZizaiLaunchConfiguration` 集中判定，不在视图层分叉：生产启动执行完整扫描和窗口生命周期；XCTest 宿主使用空目录和隔离持久化，不激活产品展示；XCUITest 则使用确定性 fixture 与独立会话目录启动完整用户界面。三者共用稳定的 `WindowGroup` 根结构，避免测试隔离改变 SwiftUI 窗口身份或破坏 AppKit 状态恢复。
 
@@ -74,7 +74,7 @@ Catalog   Library   Groups   Canvas
 - Tab 切换、首帧准备、主线程响应、画布拖动的性能预算。
 - Universal 2、macOS 13 部署目标、深浅色和辅助功能渲染。
 
-`scripts/verify_release.sh` 是本地和远程共用的单一发布门槛：它会重新构建、运行 Xcode 静态分析和 XCTest、执行关键模块覆盖率下限、真实运行 XCUITest 并执行上述审计，不会用旧的 `.artifacts.noindex/` 产物代替验证。行为、视觉、安全与持久化分别由可执行测试证明；`verify_architecture_boundaries.py` 只检查模块所有权、依赖方向和复杂度上限，`verify_saved_layout.py` 只验证本机持久布局的几何不变量，不再以源码字符串和函数切片冒充产品验收。
+`scripts/verify_release.sh` 是本地和远程共用的单一发布门槛：它会重新构建、运行 Xcode 静态分析和 XCTest、报告含声明式 UI 的单元测试整体行覆盖率，同时强制核心行为加权覆盖率和每个高风险模块下限；随后真实运行带代码覆盖率的 XCUITest，以 70% 应用整体下限和各关键 SwiftUI/AppKit 交互模块下限约束用户路径，再执行上述审计。它不会用旧的 `.artifacts.noindex/` 产物代替验证。SwiftUI `body` 是否在单元测试里被实例化不作为业务逻辑成熟度指标，声明式界面必须同时通过 XCUITest 覆盖率、深浅色视觉渲染和端到端断言。行为、视觉、安全与持久化分别由可执行测试证明；`verify_architecture_boundaries.py` 只检查模块所有权、依赖方向和复杂度上限，`verify_saved_layout.py` 只验证本机持久布局的几何不变量，不再以源码字符串和函数切片冒充产品验收。
 
 应用 Target 支持 macOS 13。当前 Xcode 27 随附的 XCTest 运行库最低面向 macOS 14，因此 XCTest Target 使用 macOS 14；macOS 13 的编译边界由 Release 构建和独立审计程序验证，真实 macOS 13 运行仍属于发布前硬件验收。
 

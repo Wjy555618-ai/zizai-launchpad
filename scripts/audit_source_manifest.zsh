@@ -34,6 +34,7 @@ typeset -ga ZIZAI_AUDIT_SOURCE_FILES=(
   "$PROJECT_DIR/Sources/SearchViews.swift"
   "$PROJECT_DIR/Sources/Sheets.swift"
   "$PROJECT_DIR/Sources/TooltipPresentation.swift"
+  "$PROJECT_DIR/Sources/TooltipWindowAnchor.swift"
   "$PROJECT_DIR/Sources/UITestSupport.swift"
   "$PROJECT_DIR/Sources/Views.swift"
 )

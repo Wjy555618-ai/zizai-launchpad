@@ -35,6 +35,7 @@ if ! /usr/bin/xcodebuild test \
   -destination "platform=macOS,arch=$NATIVE_ARCH" \
   -derivedDataPath "$DERIVED_DATA" \
   -resultBundlePath "$RESULT_BUNDLE" \
+  -enableCodeCoverage YES \
   -test-timeouts-enabled YES \
   -default-test-execution-time-allowance 60 \
   -maximum-test-execution-time-allowance 90 >"$TEST_LOG" 2>&1; then
@@ -71,6 +72,7 @@ if warnings:
 print(f"XCUITest 真实执行通过: {passed} passed, 0 failed, 0 skipped")
 PY
 /bin/rm -f "$SUMMARY_JSON"
+/bin/zsh "$PROJECT_DIR/scripts/verify_coverage.sh" "$RESULT_BUNDLE" ui
 
 # UI test runners are ad-hoc helper apps. Keeping their executable and live
 # result stream outside Documents avoids macOS Files & Folders prompts from
