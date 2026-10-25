@@ -1,6 +1,53 @@
 import Combine
 import Foundation
 
+struct ResolvedApplicationFolderAuthorization {
+    let url: URL
+    let isStale: Bool
+}
+
+/// Isolates the operating-system security-scope boundary from authorization
+/// state and scanning. Production uses Apple's bookmark APIs; unit tests inject
+/// a deterministic implementation instead of depending on an unsigned process
+/// being allowed to manufacture a user grant.
+protocol ApplicationFolderAuthorizationServicing {
+    func makeBookmark(for folder: URL) throws -> Data
+    func resolveBookmark(_ data: Data) throws -> ResolvedApplicationFolderAuthorization
+    func startAccessing(_ folder: URL) -> Bool
+    func stopAccessing(_ folder: URL)
+}
+
+struct SecurityScopedApplicationFolderAuthorizationService:
+    ApplicationFolderAuthorizationServicing
+{
+    func makeBookmark(for folder: URL) throws -> Data {
+        try folder.bookmarkData(
+            options: [.withSecurityScope, .securityScopeAllowOnlyReadAccess],
+            includingResourceValuesForKeys: nil,
+            relativeTo: nil
+        )
+    }
+
+    func resolveBookmark(_ data: Data) throws -> ResolvedApplicationFolderAuthorization {
+        var isStale = false
+        let url = try URL(
+            resolvingBookmarkData: data,
+            options: [.withSecurityScope, .withoutUI],
+            relativeTo: nil,
+            bookmarkDataIsStale: &isStale
+        )
+        return ResolvedApplicationFolderAuthorization(url: url, isStale: isStale)
+    }
+
+    func startAccessing(_ folder: URL) -> Bool {
+        folder.startAccessingSecurityScopedResource()
+    }
+
+    func stopAccessing(_ folder: URL) {
+        folder.stopAccessingSecurityScopedResource()
+    }
+}
+
 /// Owns the one piece of user-granted file access needed by the launcher.
 /// System application folders remain readable through the sandbox; an
 /// additional folder is scanned only while its persisted security scope is
@@ -15,9 +62,12 @@ final class ApplicationFolderAccess: ObservableObject {
 
     private let bookmarkURL: URL
     private let scanner: Scanner
+    private let authorizationService: any ApplicationFolderAuthorizationServicing
 
     init(
         storageDirectory: URL? = nil,
+        authorizationService: any ApplicationFolderAuthorizationServicing =
+            SecurityScopedApplicationFolderAuthorizationService(),
         scanner: @escaping Scanner = { AppScanner.scan(additionalApplicationRoots: $0) }
     ) {
         let support =
@@ -25,6 +75,7 @@ final class ApplicationFolderAccess: ObservableObject {
             ?? FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
             .appendingPathComponent("自在启动台", isDirectory: true)
         bookmarkURL = support.appendingPathComponent("应用文件夹授权.bookmark")
+        self.authorizationService = authorizationService
         self.scanner = scanner
         refreshAuthorizationStatus()
     }
@@ -46,12 +97,12 @@ final class ApplicationFolderAccess: ObservableObject {
             return false
         }
 
-        let didStartAccess = folder.startAccessingSecurityScopedResource()
+        let didStartAccess = authorizationService.startAccessing(folder)
         guard didStartAccess else {
             errorMessage = "未能获得该文件夹的只读访问权限，请重新选择。"
             return false
         }
-        defer { folder.stopAccessingSecurityScopedResource() }
+        defer { authorizationService.stopAccessing(folder) }
 
         do {
             try writeBookmark(for: folder)
@@ -87,13 +138,13 @@ final class ApplicationFolderAccess: ObservableObject {
             return scanner([])
         }
 
-        let didStartAccess = resolved.url.startAccessingSecurityScopedResource()
+        let didStartAccess = authorizationService.startAccessing(resolved.url)
         guard didStartAccess else {
             hasUsableAuthorization = false
             errorMessage = "用户应用文件夹授权已失效，请在设置中重新选择。"
             return scanner([])
         }
-        defer { resolved.url.stopAccessingSecurityScopedResource() }
+        defer { authorizationService.stopAccessing(resolved.url) }
 
         do {
             if resolved.isStale {
@@ -119,13 +170,13 @@ final class ApplicationFolderAccess: ObservableObject {
             return await scanInBackground(additionalRoots: [])
         }
 
-        let didStartAccess = resolved.url.startAccessingSecurityScopedResource()
+        let didStartAccess = authorizationService.startAccessing(resolved.url)
         guard didStartAccess else {
             hasUsableAuthorization = false
             errorMessage = "用户应用文件夹授权已失效，请在设置中重新选择。"
             return await scanInBackground(additionalRoots: [])
         }
-        defer { resolved.url.stopAccessingSecurityScopedResource() }
+        defer { authorizationService.stopAccessing(resolved.url) }
 
         do {
             if resolved.isStale {
@@ -151,21 +202,14 @@ final class ApplicationFolderAccess: ObservableObject {
         authorizedFolderPath = resolved.url.standardizedFileURL.path
     }
 
-    private func resolveAuthorizedFolder() -> (url: URL, isStale: Bool)? {
+    private func resolveAuthorizedFolder() -> ResolvedApplicationFolderAuthorization? {
         guard let data = try? Data(contentsOf: bookmarkURL) else {
             authorizedFolderPath = nil
             return nil
         }
 
         do {
-            var isStale = false
-            let url = try URL(
-                resolvingBookmarkData: data,
-                options: [.withSecurityScope, .withoutUI],
-                relativeTo: nil,
-                bookmarkDataIsStale: &isStale
-            )
-            return (url, isStale)
+            return try authorizationService.resolveBookmark(data)
         } catch {
             try? FileManager.default.removeItem(at: bookmarkURL)
             authorizedFolderPath = nil
@@ -180,11 +224,7 @@ final class ApplicationFolderAccess: ObservableObject {
             at: bookmarkURL.deletingLastPathComponent(),
             withIntermediateDirectories: true
         )
-        let data = try folder.bookmarkData(
-            options: [.withSecurityScope, .securityScopeAllowOnlyReadAccess],
-            includingResourceValuesForKeys: nil,
-            relativeTo: nil
-        )
+        let data = try authorizationService.makeBookmark(for: folder)
         try data.write(to: bookmarkURL, options: .atomic)
     }
 

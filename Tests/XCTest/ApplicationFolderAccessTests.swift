@@ -9,7 +9,10 @@ final class ApplicationFolderAccessTests: XCTestCase {
         let fixture = try TemporaryFolderFixture(prefix: "zizai-no-folder-authorization")
         defer { fixture.remove() }
         let scannedRoots = LockedTestValue<[URL]>([])
-        let manager = ApplicationFolderAccess(storageDirectory: fixture.root) { roots in
+        let manager = ApplicationFolderAccess(
+            storageDirectory: fixture.root,
+            authorizationService: TestApplicationFolderAuthorizationService()
+        ) { roots in
             scannedRoots.set(roots)
             return []
         }
@@ -36,7 +39,11 @@ final class ApplicationFolderAccessTests: XCTestCase {
         )
 
         let firstRoots = LockedTestValue<[URL]>([])
-        let manager = ApplicationFolderAccess(storageDirectory: fixture.root) { roots in
+        let authorizationService = TestApplicationFolderAuthorizationService()
+        let manager = ApplicationFolderAccess(
+            storageDirectory: fixture.root,
+            authorizationService: authorizationService
+        ) { roots in
             firstRoots.set(roots)
             return []
         }
@@ -49,7 +56,10 @@ final class ApplicationFolderAccessTests: XCTestCase {
         XCTAssertEqual(standardizedPaths(firstRoots.value), [selectedFolder.standardizedFileURL.path])
 
         let restoredRoots = LockedTestValue<[URL]>([])
-        let restored = ApplicationFolderAccess(storageDirectory: fixture.root) { roots in
+        let restored = ApplicationFolderAccess(
+            storageDirectory: fixture.root,
+            authorizationService: authorizationService
+        ) { roots in
             restoredRoots.set(roots)
             return []
         }
@@ -76,7 +86,10 @@ final class ApplicationFolderAccessTests: XCTestCase {
     func testInvalidSelectionsAndSelectionErrorsAreActionable() throws {
         let fixture = try TemporaryFolderFixture(prefix: "zizai-invalid-folder-selection")
         defer { fixture.remove() }
-        let manager = ApplicationFolderAccess(storageDirectory: fixture.root) { _ in [] }
+        let manager = ApplicationFolderAccess(
+            storageDirectory: fixture.root,
+            authorizationService: TestApplicationFolderAuthorizationService()
+        ) { _ in [] }
         let missingFolder = fixture.root.appendingPathComponent("Missing", isDirectory: true)
 
         XCTAssertFalse(manager.authorize(folder: missingFolder))
@@ -95,7 +108,10 @@ final class ApplicationFolderAccessTests: XCTestCase {
         try Data("not-a-bookmark".utf8).write(to: bookmarkURL, options: .atomic)
         let scannedRoots = LockedTestValue<[URL]>([fixture.root])
 
-        let manager = ApplicationFolderAccess(storageDirectory: fixture.root) { roots in
+        let manager = ApplicationFolderAccess(
+            storageDirectory: fixture.root,
+            authorizationService: TestApplicationFolderAuthorizationService()
+        ) { roots in
             scannedRoots.set(roots)
             return []
         }
@@ -111,6 +127,31 @@ final class ApplicationFolderAccessTests: XCTestCase {
     private func standardizedPaths(_ urls: [URL]) -> [String] {
         urls.map(\.standardizedFileURL.path)
     }
+}
+
+private struct TestApplicationFolderAuthorizationService:
+    ApplicationFolderAuthorizationServicing
+{
+    func makeBookmark(for folder: URL) throws -> Data {
+        Data(folder.standardizedFileURL.path.utf8)
+    }
+
+    func resolveBookmark(_ data: Data) throws -> ResolvedApplicationFolderAuthorization {
+        guard
+            let path = String(data: data, encoding: .utf8),
+            path.hasPrefix("/")
+        else {
+            throw CocoaError(.fileReadCorruptFile)
+        }
+        return ResolvedApplicationFolderAuthorization(
+            url: URL(fileURLWithPath: path, isDirectory: true),
+            isStale: false
+        )
+    }
+
+    func startAccessing(_ folder: URL) -> Bool { true }
+
+    func stopAccessing(_ folder: URL) {}
 }
 
 private enum TestSelectionError: LocalizedError {

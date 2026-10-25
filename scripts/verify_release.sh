@@ -47,6 +47,10 @@ if [[ -d "$TEST_RESULT_BUNDLE" ]]; then
   /bin/rm -rf "$TEST_RESULT_BUNDLE"
 fi
 
+# Application-hosted XCTest must be signed by Xcode's local ad-hoc identity.
+# Disabling signing leaves the Hardened Runtime host unable to load XCTest on a
+# clean CI machine, even though a developer-authorized workstation may tolerate
+# that invalid combination.
 if ! /usr/bin/xcodebuild test \
   -project "$PROJECT_DIR/自在启动台.xcodeproj" \
   -scheme "自在启动台" \
@@ -54,7 +58,9 @@ if ! /usr/bin/xcodebuild test \
   -derivedDataPath "$TEST_DERIVED_DATA" \
   -enableCodeCoverage YES \
   -resultBundlePath "$TEST_RESULT_BUNDLE" \
-  CODE_SIGNING_ALLOWED=NO >"$TEST_LOG" 2>&1; then
+  -test-timeouts-enabled YES \
+  -default-test-execution-time-allowance 30 \
+  -maximum-test-execution-time-allowance 60 >"$TEST_LOG" 2>&1; then
   /usr/bin/tail -n 160 "$TEST_LOG" >&2
   exit 1
 fi
