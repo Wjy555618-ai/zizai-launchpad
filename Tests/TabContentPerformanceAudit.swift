@@ -69,18 +69,28 @@ enum TabContentPerformanceAudit {
             var cpuSamples: [Double] = []
             for index in 0..<sampleCount {
                 let mode = modes[index % modes.count]
-                let wallStart = DispatchTime.now().uptimeNanoseconds
-                let cpuStart = threadCPUTimeNanoseconds()
-                layoutModeController.selection = mode
-                store.stageLayoutModePersistence(mode)
-                hosting.layoutSubtreeIfNeeded()
-                let cpuEnd = threadCPUTimeNanoseconds()
-                let wallEnd = DispatchTime.now().uptimeNanoseconds
-                let wallDuration = Double(wallEnd - wallStart) / 1_000_000
-                let cpuDuration = Double(cpuEnd - cpuStart) / 1_000_000
+                let (wallDuration, cpuDuration) = autoreleasepool {
+                    let wallStart = DispatchTime.now().uptimeNanoseconds
+                    let cpuStart = threadCPUTimeNanoseconds()
+                    layoutModeController.selection = mode
+                    store.stageLayoutModePersistence(mode)
+                    hosting.layoutSubtreeIfNeeded()
+                    let cpuEnd = threadCPUTimeNanoseconds()
+                    let wallEnd = DispatchTime.now().uptimeNanoseconds
+                    return (
+                        Double(wallEnd - wallStart) / 1_000_000,
+                        Double(cpuEnd - cpuStart) / 1_000_000
+                    )
+                }
                 wallSamples.append(wallDuration)
                 cpuSamples.append(cpuDuration)
                 allLabeledSamples.append((mode, wallDuration, cpuDuration))
+
+                // A real second click cannot arrive before AppKit finishes the
+                // current event. Drain deferred display work between samples
+                // so one synthetic click is never charged for its predecessor.
+                hosting.displayIfNeeded()
+                RunLoop.current.run(until: Date().addingTimeInterval(0.001))
             }
 
             let sortedWall = wallSamples.sorted()
