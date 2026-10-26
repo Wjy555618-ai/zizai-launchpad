@@ -1,4 +1,5 @@
 import AppKit
+import Darwin
 import Foundation
 
 @main
@@ -18,20 +19,22 @@ enum AsyncWorkPerformanceAudit {
             purpose: "测试",
             group: .productivity
         )
-        // A single wall-clock maximum mistakes one hosted-runner scheduling
-        // preemption for product work. Repeat the complete scan independently
-        // and gate on the median batch maximum: a real main-actor regression
-        // repeats, while one unrelated host stall cannot clear or fail the
-        // product contract by itself. The 40ms limit remains unchanged.
+        // Repeat the complete scan independently and use zero-tolerance
+        // heartbeats. Hosted macOS otherwise coalesces a 5ms Task.sleep into
+        // roughly 50ms for energy efficiency, which measures the clock policy
+        // instead of product responsiveness. Wall and main-thread CPU budgets
+        // remain independently bounded at 40ms.
         var stores: [LauncherStore] = []
         var stateDirectories: [URL] = []
-        var scanBatchMaximums: [Double] = []
+        var scanBatchWallMaximums: [Double] = []
+        var scanBatchCPUMaximums: [Double] = []
         for batchIndex in 0..<3 {
             let stateDirectory = root.appendingPathComponent(
                 "batch-\(batchIndex)",
                 isDirectory: true
             )
             let access = ApplicationFolderAccess(storageDirectory: stateDirectory) { _ in
+                precondition(!Thread.isMainThread, "应用扫描提供者错误运行在主线程")
                 Thread.sleep(forTimeInterval: 0.16)
                 return [app]
             }
@@ -44,30 +47,45 @@ enum AsyncWorkPerformanceAudit {
 
             require(store.isReloadingApps, "第 \(batchIndex + 1) 批后台扫描未进入进行中状态")
             var previousTick = DispatchTime.now().uptimeNanoseconds
-            var largestMainActorGap = 0.0
+            var previousCPUTime = threadCPUTimeNanoseconds()
+            var largestWallGap = 0.0
+            var largestCPUGap = 0.0
             let deadline = Date().addingTimeInterval(2)
             while store.isReloadingApps && Date() < deadline {
-                try? await Task.sleep(for: .milliseconds(5))
+                try? await Task.sleep(for: .milliseconds(5), tolerance: .zero)
                 let now = DispatchTime.now().uptimeNanoseconds
-                largestMainActorGap = max(
-                    largestMainActorGap,
+                let currentCPUTime = threadCPUTimeNanoseconds()
+                largestWallGap = max(
+                    largestWallGap,
                     Double(now - previousTick) / 1_000_000
                 )
+                largestCPUGap = max(
+                    largestCPUGap,
+                    Double(currentCPUTime - previousCPUTime) / 1_000_000
+                )
                 previousTick = now
+                previousCPUTime = currentCPUTime
             }
 
             require(!store.isReloadingApps, "第 \(batchIndex + 1) 批后台扫描超时")
             require(store.apps == [app], "第 \(batchIndex + 1) 批后台扫描结果没有在主线程一次性提交")
             stores.append(store)
             stateDirectories.append(stateDirectory)
-            scanBatchMaximums.append(largestMainActorGap)
+            scanBatchWallMaximums.append(largestWallGap)
+            scanBatchCPUMaximums.append(largestCPUGap)
         }
 
-        let sortedScanBatchMaximums = scanBatchMaximums.sorted()
-        let representativeScanMaximum = sortedScanBatchMaximums[sortedScanBatchMaximums.count / 2]
+        let sortedScanBatchWallMaximums = scanBatchWallMaximums.sorted()
+        let representativeWallMaximum =
+            sortedScanBatchWallMaximums[sortedScanBatchWallMaximums.count / 2]
+        let absoluteCPUMaximum = scanBatchCPUMaximums.max() ?? .infinity
         require(
-            representativeScanMaximum < 40,
-            "三批扫描的中位最大主线程停顿 \(format(representativeScanMaximum))ms"
+            representativeWallMaximum < 40,
+            "三批扫描的中位最大主线程 wall 停顿 \(format(representativeWallMaximum))ms"
+        )
+        require(
+            absoluteCPUMaximum < 40,
+            "扫描期间主线程 CPU 峰值 \(format(absoluteCPUMaximum))ms"
         )
         guard let store = stores.last, let stateDirectory = stateDirectories.last else {
             fail("后台扫描没有生成可用于持久化验收的状态")
@@ -91,16 +109,26 @@ enum AsyncWorkPerformanceAudit {
         }
         require(persisted.aliases[app.id] == "后台保存", "终止刷盘丢失最新状态")
 
-        let scanBatchSummary = scanBatchMaximums.map(format).joined(separator: "ms / ")
+        let wallSummary = scanBatchWallMaximums.map(format).joined(separator: "ms / ")
+        let cpuSummary = scanBatchCPUMaximums.map(format).joined(separator: "ms / ")
         print(
-            "后台工作验收通过：3 批 160ms 扫描的主线程最大间隔 "
-                + "\(scanBatchSummary)ms，中位 \(format(representativeScanMaximum))ms；大布局保存调用 "
+            "后台工作验收通过：3 批 160ms 扫描的主线程 wall 最大间隔 "
+                + "\(wallSummary)ms，中位 \(format(representativeWallMaximum))ms；"
+                + "CPU 最大间隔 \(cpuSummary)ms，绝对峰值 \(format(absoluteCPUMaximum))ms；大布局保存调用 "
                 + "\(format(saveReturn))ms 返回，终止刷盘完整。"
         )
     }
 
     private static func format(_ value: Double) -> String {
         String(format: "%.3f", value)
+    }
+
+    private static func threadCPUTimeNanoseconds() -> UInt64 {
+        var time = timespec()
+        guard clock_gettime(CLOCK_THREAD_CPUTIME_ID, &time) == 0 else {
+            fail("无法读取主线程 CPU 时钟")
+        }
+        return UInt64(time.tv_sec) * 1_000_000_000 + UInt64(time.tv_nsec)
     }
 
     private static func require(_ condition: @autoclosure () -> Bool, _ message: String) {
