@@ -1,15 +1,13 @@
 #!/usr/bin/env python3
-"""Validate the installed user's persisted spatial layout semantically."""
+"""Validate one explicitly selected persisted spatial-layout file."""
 
 from __future__ import annotations
 
+import argparse
 import json
-import os
 import pathlib
-import plistlib
 
 
-ROOT = pathlib.Path(__file__).resolve().parent.parent
 APP_WIDTH = 164.0
 APP_HEIGHT = 158.0
 GROUP_GAP = 42.0
@@ -17,17 +15,6 @@ GROUP_GAP = 42.0
 
 def fail(message: str) -> None:
     raise SystemExit(f"布局验收失败：{message}")
-
-
-def resolved_bundle_identifier() -> str | None:
-    if configured := os.environ.get("ZIZAI_BUNDLE_IDENTIFIER"):
-        return configured
-    built_info = ROOT / ".artifacts.noindex" / "自在启动台.app" / "Contents" / "Info.plist"
-    if not built_info.exists():
-        return None
-    with built_info.open("rb") as info_file:
-        value = plistlib.load(info_file).get("CFBundleIdentifier")
-    return value if isinstance(value, str) and value else None
 
 
 def group_rect(group: dict) -> tuple[float, float, float, float]:
@@ -57,25 +44,9 @@ def intersects(
     )
 
 
-def main() -> None:
-    bundle_identifier = resolved_bundle_identifier()
-    if bundle_identifier is None:
-        print("未定位构建产物 Bundle ID，跳过本机已安装布局验收。")
-        return
-    state_path = (
-        pathlib.Path.home()
-        / "Library"
-        / "Containers"
-        / bundle_identifier
-        / "Data"
-        / "Library"
-        / "Application Support"
-        / "自在启动台"
-        / "布局.json"
-    )
-    if not state_path.exists():
-        print("未发现既有布局数据，跳过本机布局迁移验收。")
-        return
+def validate(state_path: pathlib.Path) -> tuple[int, int]:
+    if not state_path.is_file():
+        fail(f"缺少明确指定的布局文件：{state_path}")
 
     data = json.loads(state_path.read_text(encoding="utf-8"))
     groups = data.get("userGroups", [])
@@ -120,7 +91,15 @@ def main() -> None:
                     fail(f"应用 {left[0]} 与 {right[0]} 在分组 {group_id} 重叠")
 
     visible_count = sum(app_id not in hidden_ids for app_id in positions)
-    print(f"布局验收通过：{len(groups)} 个分组、{visible_count} 个可见应用均无重叠。")
+    return len(groups), visible_count
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--state", required=True, type=pathlib.Path)
+    arguments = parser.parse_args()
+    group_count, visible_count = validate(arguments.state.expanduser().resolve())
+    print(f"布局验收通过：{group_count} 个分组、{visible_count} 个可见应用均无重叠。")
 
 
 if __name__ == "__main__":

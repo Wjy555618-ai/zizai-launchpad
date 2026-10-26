@@ -50,6 +50,20 @@ STORE_MODULE_LIMITS = {
     "LauncherStateHistory.swift": 120,
 }
 
+UI_MODULE_LIMITS = {
+    "Views.swift": 600,
+    "PrimaryLayerHosting.swift": 280,
+    "TopChromeViews.swift": 160,
+    "AppPresentationViews.swift": 340,
+    "CanvasView.swift": 280,
+    "CanvasGroupViews.swift": 580,
+    "CanvasAppViews.swift": 340,
+    "LibraryViews.swift": 300,
+    "LibraryGroupViews.swift": 380,
+    "LibraryAppViews.swift": 220,
+    "LibraryTooltipViews.swift": 200,
+}
+
 
 def fail(message: str) -> None:
     raise SystemExit(f"架构边界验收失败：{message}")
@@ -76,6 +90,16 @@ def main() -> None:
             fail(f"{name} 未同时加入 Xcode 文件组与应用 Sources 阶段")
         if f'"$PROJECT_DIR/Sources/{name}"' not in manifest:
             fail(f"{name} 未进入独立审计的共享源码清单")
+
+    for name, limit in UI_MODULE_LIMITS.items():
+        content = source_text(name)
+        line_count = len(content.splitlines())
+        if line_count > limit:
+            fail(f"{name} 为 {line_count} 行，超过界面职责边界 {limit} 行")
+        if project.count(f"/* {name}") < 2:
+            fail(f"{name} 未同时加入 Xcode 文件组与应用 Sources 阶段")
+        if f'"$PROJECT_DIR/Sources/{name}"' not in manifest:
+            fail(f"{name} 未进入完整界面审计源图")
 
     for pure_module in (
         "LauncherStateHistory.swift",
@@ -133,6 +157,8 @@ def main() -> None:
     release_gate = RELEASE_GATE.read_text(encoding="utf-8")
     if "verify_release_core.sh" not in release_gate or "verify_release_runtime.sh" not in release_gate:
         fail("发布总门槛没有统一编排 core/runtime 职责阶段")
+    if "audit_public_repo.sh" not in release_gate:
+        fail("发布总门槛没有统一编排公开仓库候选审计")
     release_core = RELEASE_CORE.read_text(encoding="utf-8")
     release_runtime = RELEASE_RUNTIME.read_text(encoding="utf-8")
     if "run_ui_tests.sh" not in release_core or "run_architecture_audit.sh" not in release_core:
@@ -142,6 +168,7 @@ def main() -> None:
         "run_accessibility_render_audit.sh",
         "verify_visual_reproducibility.sh",
         "verify_app_store_assets.sh",
+        "test_verify_saved_layout.py",
     ):
         if required_runner not in release_runtime:
             fail(f"runtime 阶段缺少 {required_runner}")
@@ -175,7 +202,7 @@ def main() -> None:
         fail("GitHub Actions 没有通过统一发布入口执行分阶段门槛")
 
     print(
-        "架构边界验收通过：单一状态聚合根、五个职责模块、值语义撤销历史，"
+        "架构边界验收通过：单一状态聚合根、领域职责模块、界面组成边界与值语义撤销历史，"
         "界面审计复用单一整模块优化产物，且没有旧源码形状验收器或平行事实源。"
     )
 

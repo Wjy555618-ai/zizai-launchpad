@@ -40,6 +40,14 @@
 		A10000000000000000000121 /* LauncherStateHistory.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000024 /* LauncherStateHistory.swift */; };
 		A10000000000000000000122 /* LauncherStore+Groups.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000025 /* LauncherStore+Groups.swift */; };
 		A10000000000000000000123 /* TooltipWindowAnchor.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000026 /* TooltipWindowAnchor.swift */; };
+		A10000000000000000000124 /* AppPresentationViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000027 /* AppPresentationViews.swift */; };
+		A10000000000000000000125 /* PrimaryLayerHosting.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000028 /* PrimaryLayerHosting.swift */; };
+		A10000000000000000000126 /* TopChromeViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000029 /* TopChromeViews.swift */; };
+		A10000000000000000000127 /* CanvasAppViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000002A /* CanvasAppViews.swift */; };
+		A10000000000000000000128 /* CanvasGroupViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000002B /* CanvasGroupViews.swift */; };
+		A10000000000000000000129 /* LibraryAppViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000002C /* LibraryAppViews.swift */; };
+		A1000000000000000000012A /* LibraryGroupViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000002D /* LibraryGroupViews.swift */; };
+		A1000000000000000000012B /* LibraryTooltipViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000002E /* LibraryTooltipViews.swift */; };
 		B20000000000000000000101 /* ApplicationIdentityTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000001 /* ApplicationIdentityTests.swift */; };
 		B20000000000000000000102 /* InteractionGeometryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000003 /* InteractionGeometryTests.swift */; };
 		B20000000000000000000103 /* LoginItemManagerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000004 /* LoginItemManagerTests.swift */; };
@@ -110,6 +118,14 @@
 		A10000000000000000000024 /* LauncherStateHistory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LauncherStateHistory.swift; sourceTree = "<group>"; };
 		A10000000000000000000025 /* LauncherStore+Groups.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "LauncherStore+Groups.swift"; sourceTree = "<group>"; };
 		A10000000000000000000026 /* TooltipWindowAnchor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TooltipWindowAnchor.swift; sourceTree = "<group>"; };
+		A10000000000000000000027 /* AppPresentationViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppPresentationViews.swift; sourceTree = "<group>"; };
+		A10000000000000000000028 /* PrimaryLayerHosting.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrimaryLayerHosting.swift; sourceTree = "<group>"; };
+		A10000000000000000000029 /* TopChromeViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TopChromeViews.swift; sourceTree = "<group>"; };
+		A1000000000000000000002A /* CanvasAppViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CanvasAppViews.swift; sourceTree = "<group>"; };
+		A1000000000000000000002B /* CanvasGroupViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CanvasGroupViews.swift; sourceTree = "<group>"; };
+		A1000000000000000000002C /* LibraryAppViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryAppViews.swift; sourceTree = "<group>"; };
+		A1000000000000000000002D /* LibraryGroupViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryGroupViews.swift; sourceTree = "<group>"; };
+		A1000000000000000000002E /* LibraryTooltipViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryTooltipViews.swift; sourceTree = "<group>"; };
 		B20000000000000000000001 /* ApplicationIdentityTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApplicationIdentityTests.swift; sourceTree = "<group>"; };
 		B20000000000000000000002 /* 自在启动台Tests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "自在启动台Tests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		B20000000000000000000003 /* InteractionGeometryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InteractionGeometryTests.swift; sourceTree = "<group>"; };
@@ -166,10 +182,13 @@
 			isa = PBXGroup;
 			children = (
 				A10000000000000000000020 /* AllAppsViews.swift */,
+				A10000000000000000000027 /* AppPresentationViews.swift */,
 				A10000000000000000000012 /* ApplicationFolderAccess.swift */,
 				A10000000000000000000018 /* ApplicationCatalogLogic.swift */,
 				A1000000000000000000001E /* ApplicationSearchPolicy.swift */,
 				A10000000000000000000001 /* AppScanner.swift */,
+				A1000000000000000000002A /* CanvasAppViews.swift */,
+				A1000000000000000000002B /* CanvasGroupViews.swift */,
 				A10000000000000000000002 /* CanvasView.swift */,
 				A10000000000000000000003 /* Compatibility.swift */,
 				A10000000000000000000013 /* DesignSystem.swift */,
@@ -182,15 +201,20 @@
 				A10000000000000000000006 /* LauncherStore.swift */,
 				A10000000000000000000024 /* LauncherStateHistory.swift */,
 				A1000000000000000000001D /* LauncherStateReconciler.swift */,
+				A1000000000000000000002C /* LibraryAppViews.swift */,
+				A1000000000000000000002D /* LibraryGroupViews.swift */,
+				A1000000000000000000002E /* LibraryTooltipViews.swift */,
 				A10000000000000000000007 /* LibraryViews.swift */,
 				A10000000000000000000016 /* LaunchPresentation.swift */,
 				A10000000000000000000008 /* LoginItemSettings.swift */,
 				A10000000000000000000009 /* Models.swift */,
+				A10000000000000000000028 /* PrimaryLayerHosting.swift */,
 				A1000000000000000000001F /* SearchViews.swift */,
 				A1000000000000000000000A /* Sheets.swift */,
 				A1000000000000000000001C /* SpatialLayoutEngine.swift */,
 				A10000000000000000000017 /* StatePersistence.swift */,
 				A1000000000000000000001A /* TooltipPresentation.swift */,
+				A10000000000000000000029 /* TopChromeViews.swift */,
 				A10000000000000000000026 /* TooltipWindowAnchor.swift */,
 				A1000000000000000000001B /* UITestSupport.swift */,
 				A1000000000000000000000B /* Views.swift */,
@@ -383,10 +407,13 @@
 			buildActionMask = 2147483647;
 			files = (
 				A1000000000000000000011D /* AllAppsViews.swift in Sources */,
+				A10000000000000000000124 /* AppPresentationViews.swift in Sources */,
 				A1000000000000000000010F /* ApplicationFolderAccess.swift in Sources */,
 				A10000000000000000000115 /* ApplicationCatalogLogic.swift in Sources */,
 				A1000000000000000000011B /* ApplicationSearchPolicy.swift in Sources */,
 				A10000000000000000000101 /* AppScanner.swift in Sources */,
+				A10000000000000000000127 /* CanvasAppViews.swift in Sources */,
+				A10000000000000000000128 /* CanvasGroupViews.swift in Sources */,
 				A10000000000000000000102 /* CanvasView.swift in Sources */,
 				A10000000000000000000103 /* Compatibility.swift in Sources */,
 				A10000000000000000000110 /* DesignSystem.swift in Sources */,
@@ -398,16 +425,21 @@
 				A1000000000000000000011F /* LauncherStore+Library.swift in Sources */,
 				A10000000000000000000106 /* LauncherStore.swift in Sources */,
 				A10000000000000000000121 /* LauncherStateHistory.swift in Sources */,
+				A10000000000000000000129 /* LibraryAppViews.swift in Sources */,
+				A1000000000000000000012A /* LibraryGroupViews.swift in Sources */,
+				A1000000000000000000012B /* LibraryTooltipViews.swift in Sources */,
 				A10000000000000000000107 /* LibraryViews.swift in Sources */,
 				A10000000000000000000113 /* LaunchPresentation.swift in Sources */,
 				A10000000000000000000108 /* LoginItemSettings.swift in Sources */,
 				A10000000000000000000109 /* Models.swift in Sources */,
+				A10000000000000000000125 /* PrimaryLayerHosting.swift in Sources */,
 				A1000000000000000000011C /* SearchViews.swift in Sources */,
 				A1000000000000000000010A /* Sheets.swift in Sources */,
 				A10000000000000000000119 /* SpatialLayoutEngine.swift in Sources */,
 				A1000000000000000000011A /* LauncherStateReconciler.swift in Sources */,
 				A10000000000000000000114 /* StatePersistence.swift in Sources */,
 				A10000000000000000000117 /* TooltipPresentation.swift in Sources */,
+				A10000000000000000000126 /* TopChromeViews.swift in Sources */,
 				A10000000000000000000123 /* TooltipWindowAnchor.swift in Sources */,
 				A10000000000000000000118 /* UITestSupport.swift in Sources */,
 				A1000000000000000000010B /* Views.swift in Sources */,

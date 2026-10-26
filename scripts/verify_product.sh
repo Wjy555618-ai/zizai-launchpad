@@ -18,7 +18,12 @@ STATE="$HOME/Library/Containers/$BUNDLE_ID/Data/Library/Application Support/自�
 BACKUP_STATE="$HOME/Library/Containers/$BUNDLE_ID/Data/Library/Application Support/自在启动台/布局.backup.json"
 /bin/zsh "$PROJECT_DIR/scripts/run_visual_render_audit.sh" /tmp/zizai-product-visual-audit.png >/dev/null
 [[ -s /tmp/zizai-product-visual-audit.png ]]
-ZIZAI_BUNDLE_IDENTIFIER="$BUNDLE_ID" /usr/bin/python3 "$PROJECT_DIR/scripts/verify_saved_layout.py"
+if [[ -f "$STATE" ]]; then
+  /usr/bin/python3 "$PROJECT_DIR/scripts/verify_saved_layout.py" --state "$STATE"
+  LAYOUT_CLAIM="显式指定的本机布局完整性"
+else
+  LAYOUT_CLAIM="新安装无旧布局迁移对象"
+fi
 /usr/bin/codesign --verify --deep --strict "$APP_DIR"
 /usr/bin/plutil -lint "$PROJECT_DIR/Resources/Info.plist" "$PROJECT_DIR/Resources/ZizaiLaunchpad.entitlements" >/dev/null
 /usr/bin/python3 "$PROJECT_DIR/scripts/verify_security_capabilities.py" --app "$APP_DIR"
@@ -34,4 +39,4 @@ if [[ -x "$INSTALLED_APP/Contents/MacOS/ZizaiLaunchpad" ]]; then
      "$(/usr/bin/shasum -a 256 "$INSTALLED_APP/Contents/MacOS/ZizaiLaunchpad" | /usr/bin/awk '{print $1}')" ]]
 fi
 
-echo "产品验收通过：构建、交互模型、应用扫描、状态闭环、离屏界面、布局完整性、签名和本机安装一致性均正常。"
+echo "产品验收通过：构建、交互模型、应用扫描、状态闭环、离屏界面、${LAYOUT_CLAIM}、签名和本机安装一致性均正常。"

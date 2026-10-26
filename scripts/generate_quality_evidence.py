@@ -156,6 +156,8 @@ payload = {
         "app_store_assets": "passed",
         "sandbox_and_privacy": "passed",
         "interaction_and_performance_audits": "passed",
+        "saved_layout_validator_contract": "passed",
+        "public_repository_candidate": "passed",
         "product_truth": "passed",
     },
     "claim_boundary": {
@@ -168,6 +170,7 @@ payload = {
             "multiple displays",
             "sleep-wake and long-running session",
         ],
+        "installed_user_layout": "not_evaluated_without_an_explicit_state_file",
     },
 }
 

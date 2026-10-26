@@ -37,8 +37,8 @@ Catalog   Library   Groups   Canvas
 
 ## 界面与交互
 
-- `RootView` 维持三个主视图的持久 `NSHostingView`，Tab 切换只更新轻量容器，避免重建整个应用网格。宿主层在原生窗口外观变化时统一同步 `effectiveAppearance` 并重新求值 SwiftUI 语义色，不由页面或单个文字各自管理深浅色分支。
-- `SearchViews` 独立承担搜索控件与结果组合；`AllAppsViews` 独立承担完整应用目录、筛选与显隐事务；`LibraryViews` 只保留分组视图及其交互。多实例应用在通用图标项和搜索结果中都分行展示主名称与去除 `.app` 扩展名的实例来源，不把身份信息挤进窄小的单行标签。
+- `RootView` 只组合顶层导航和主内容；`PrimaryLayerHosting` 维持三个主视图的持久 `NSHostingView`，Tab 切换只更新轻量容器，避免重建整个应用网格。宿主层在原生窗口外观变化时统一同步 `effectiveAppearance` 并重新求值 SwiftUI 语义色，不由页面或单个文字各自管理深浅色分支。`TopChromeViews` 只负责顶部导航，`AppPresentationViews` 只负责通用应用图标与状态呈现。
+- `SearchViews` 独立承担搜索控件与结果组合；`AllAppsViews` 独立承担完整应用目录、筛选与显隐事务。分组和空间页面均按页面组合、分组容器、应用项与辅助控件拆分，跨文件只暴露组合所需的内部边界。多实例应用在通用图标项和搜索结果中都分行展示主名称与去除 `.app` 扩展名的实例来源，不把身份信息挤进窄小的单行标签。
 - 品牌身份分为两个明确边界：`AppIcon.icon` 仅供 Finder、Dock、Spotlight 与 App Store 使用；界面内统一使用 `ZizaiBrandMark`，只渲染紧凑裁切的透明四色前景，在浅色与深色外观中均不添加底面、材质、描边或阴影。
 - `InteractionGeometry` 负责输入手势与视口的纯计算；`SpatialLayoutEngine` 负责分组帧、应用网格、碰撞、尺寸映射与分组分离。指针操作、键盘/VoiceOver 自定义操作、迁移修复和测试共用这一套规则。
 - 空间视图在拖动期间只更新局部预览，释放时才执行完整碰撞解析和持久化。
@@ -76,7 +76,9 @@ Catalog   Library   Groups   Canvas
 
 页面切换性能同时记录 wall-clock 与当前主线程 CPU 时间：持续 P95/P99 约束用户可见帧预算，单次绝对门槛约束产品自身 CPU 工作量。共享 CI 主机或 WindowServer 的偶发抢占会保留在 wall 最大值诊断中，但不会被伪装成应用代码突然执行了等量工作。
 
-`scripts/verify_release.sh` 是本地与远程共享实现、按能力和职责显式配置的发布门槛。默认交互式配置会依次执行 core 与 runtime 两阶段：重新构建、运行 Xcode 静态分析和 XCTest、报告含声明式 UI 的单元测试整体行覆盖率，同时强制核心行为加权覆盖率和每个高风险模块下限；随后真实运行带代码覆盖率的 XCUITest，以 70% 应用整体下限和各关键 SwiftUI/AppKit 交互模块下限约束用户路径，再执行行为、性能、视觉、安全和资产审计并生成完整质量证据。远程工作流把同一实现拆成 `--hosted-ci-core` 与 `--hosted-ci-runtime` 并行矩阵，避免用一个不可观测的超长步骤串行重复编译；四项完整 SwiftUI 运行时审计进一步通过内容摘要绑定的单一发布优化可执行文件复用同一产品源图。该单一程序使用 `-whole-module-optimization` 一次分析完整模块，而不是把每个源文件当作 primary file 反复解析同一 SwiftUI 图；构建开始、结束和耗时都是显式日志。视觉证据固定为 2×、8 位 RGB 离屏画布，示例图标由确定性 Core Graphics 位图管线创建；商店四场景必须连续两轮产生逐字节一致的 PNG 与 JPEG，动态焦点、屏幕缩放和显示器色彩空间不得进入发布素材。托管 core 把完整 UI 套件构建成可执行 xctestrun，但不会在缺少受信任交互式辅助功能会话的临时主机上伪造 UI 执行结果。SwiftUI `body` 是否在单元测试里被实例化不作为业务逻辑成熟度指标，声明式界面必须同时通过交互式 XCUITest 覆盖率、深浅色视觉渲染和端到端断言。行为、视觉、安全与持久化分别由可执行测试证明；`verify_architecture_boundaries.py` 只检查模块所有权、依赖方向和复杂度上限，`verify_saved_layout.py` 只验证本机持久布局的几何不变量，不再以源码字符串和函数切片冒充产品验收。
+`scripts/verify_release.sh` 是本地与远程共享实现、按能力和职责显式配置的发布门槛。默认交互式配置会依次执行 core 与 runtime 阶段，并在生成质量证据前直接编排公开仓库候选审计。远程工作流把同一实现拆成 `--hosted-ci-core` 与 `--hosted-ci-runtime` 并行矩阵，公开仓库审计只由 core 阶段执行一次。四项 SwiftUI 运行时审计通过内容摘要绑定的单一 `-whole-module-optimization` 产物复用完整产品源图，构建耗时显式可观测。视觉证据固定为 2×、8 位 RGB 离屏画布，商店四场景必须连续两轮产生逐字节一致的 PNG 与 JPEG。托管 core 会构建完整 UI 套件，但不会在缺少受信任交互式辅助功能会话的主机上伪造 XCUITest 执行结果。
+
+行为、视觉、安全与持久化分别由可执行测试证明。`verify_architecture_boundaries.py` 只检查模块所有权、依赖方向和复杂度上限。`verify_saved_layout.py` 只验证调用者显式指定的持久布局几何不变量；缺失文件或冲突数据均失败关闭，不再以跳过、源码字符串或函数切片冒充产品验收。
 
 应用 Target 支持 macOS 13。当前 Xcode 27 随附的 XCTest 运行库最低面向 macOS 14，因此 XCTest Target 使用 macOS 14；macOS 13 的编译边界由 Release 构建和独立审计程序验证，真实 macOS 13 运行仍属于发布前硬件验收。
 

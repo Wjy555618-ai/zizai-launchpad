@@ -42,9 +42,16 @@ if [[ "$VALIDATION_STAGE" == "all" || "$VALIDATION_STAGE" == "runtime" ]]; then
   /bin/zsh "$PROJECT_DIR/scripts/verify_release_runtime.sh"
 fi
 
+# Repository hygiene is part of the same release contract. Keep it in the
+# orchestrator rather than relying on a separate human step that can be
+# silently omitted. The hosted matrix runs it in the core lane only.
+if [[ "$VALIDATION_STAGE" == "all" || "$VALIDATION_STAGE" == "core" ]]; then
+  /bin/zsh "$PROJECT_DIR/scripts/audit_public_repo.sh"
+fi
+
 if [[ "$VALIDATION_PROFILE" == "interactive" ]]; then
   /usr/bin/python3 "$PROJECT_DIR/scripts/generate_quality_evidence.py" "$ARTIFACT_DIR"
-  echo "完整交互式工程门槛通过：核心构建与真实 XCUITest、统一界面运行时审计、视觉和发布资产均有效。"
+  echo "完整交互式工程门槛通过：核心构建与真实 XCUITest、统一界面运行时审计、视觉、发布资产与公开仓库候选集均有效。"
 elif [[ "$VALIDATION_STAGE" == "all" ]]; then
   echo "GitHub 托管工程门槛通过：核心与运行时两个职责阶段均有效。"
   echo "边界：托管配置没有生成真实 XCUITest 通过结论；发布仍要求受信任交互式 macOS 会话执行默认门槛。"

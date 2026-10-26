@@ -121,6 +121,7 @@ echo "[3/7] 构建唯一正式版本"
 [[ -x "$BUILD_APP/Contents/MacOS/ZizaiLaunchpad" ]] || fail "构建未产生可执行应用。"
 BUNDLE_ID="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$BUILD_APP/Contents/Info.plist" 2>/dev/null || true)"
 [[ -n "$BUNDLE_ID" ]] || fail "构建产物缺少 Bundle ID。"
+EXISTING_STATE="$HOME/Library/Containers/$BUNDLE_ID/Data/Library/Application Support/自在启动台/布局.json"
 BUILD_ARCHITECTURES="$(/usr/bin/lipo -archs "$BUILD_APP/Contents/MacOS/ZizaiLaunchpad")"
 [[ "$BUILD_ARCHITECTURES" == *"arm64"* && "$BUILD_ARCHITECTURES" == *"x86_64"* ]] || fail "构建产物不是 Universal 2：$BUILD_ARCHITECTURES"
 [[ "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIconFile' "$BUILD_APP/Contents/Info.plist")" == "AppIcon" ]] || fail "构建产物不是新的 Liquid Glass Logo 版本。"
@@ -130,7 +131,11 @@ echo "[4/7] 运行核心工程验证"
 /usr/bin/codesign --verify --deep --strict "$BUILD_APP"
 /bin/zsh "$PROJECT_DIR/scripts/run_interaction_tests.sh" >/dev/null
 /bin/zsh "$PROJECT_DIR/scripts/run_canvas_interaction_performance_audit.sh" >/dev/null
-/usr/bin/python3 "$PROJECT_DIR/scripts/verify_saved_layout.py" >/dev/null
+if [[ -f "$EXISTING_STATE" ]]; then
+  /usr/bin/python3 "$PROJECT_DIR/scripts/verify_saved_layout.py" --state "$EXISTING_STATE" >/dev/null
+else
+  echo "当前 Bundle ID 没有旧布局；新安装无迁移对象。"
+fi
 
 echo "[5/7] 分阶段原子安装"
 /bin/mkdir -p "$INSTALL_PARENT"

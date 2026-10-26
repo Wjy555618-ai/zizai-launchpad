@@ -9,12 +9,11 @@
 ```sh
 ./scripts/verify_release.sh
 ./scripts/verify_unsigned_archive.sh
-./scripts/audit_public_repo.sh
 ```
 
-`verify_release.sh` 会真实运行 XCTest 和 XCUITest，不以编译代替执行；全部成功后生成与当前源码指纹绑定的 `.artifacts.noindex/quality-evidence.json`。任意一条命令失败就停止发布。
+`verify_release.sh` 会真实运行 XCTest 和 XCUITest，不以编译代替执行，并在同一总门槛中执行公开仓库候选审计；全部成功后才生成与当前源码指纹绑定的 `.artifacts.noindex/quality-evidence.json`。`verify_unsigned_archive.sh` 负责独立的未签名 Archive 结构检查；任意一条命令失败就停止发布。
 
-其中 `audit_public_repo.sh` 只适用于包含完整 GitHub 文档与 `.github` 配置的源码仓库；精简的 App Store 接力包不携带该脚本，按入口文档执行前两项即可。接力包自身由源码仓库中的 `verify_app_store_handoff.sh` 在干净解压目录内复验。
+精简的 App Store 接力包不携带 GitHub 文档和公开仓库审计脚本，因此不直接执行源码仓库总门槛；它由源码仓库中的 `verify_app_store_handoff.sh` 在干净解压目录内按接力包边界独立复验。
 
 ## GitHub 公开
 
