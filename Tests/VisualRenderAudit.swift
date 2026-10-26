@@ -128,7 +128,11 @@ enum VisualRenderAudit {
             canvasSize = CGSize(width: 900, height: 280)
         } else {
             let applicationRoot = RootView(
-                layoutModeController: LayoutModeController(selection: layoutMode)
+                layoutModeController: LayoutModeController(selection: layoutMode),
+                // Store and accessibility evidence represents the settled
+                // product surface. Do not race the production-only launch
+                // prewarm overlay against a fixed hosted-runner delay.
+                performsLaunchPrewarm: false
             )
             .environmentObject(store)
             if layoutArgument.hasPrefix("appearanceTransition") {

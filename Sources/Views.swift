@@ -131,6 +131,18 @@ private struct PersistentPrimaryLayer<Content: View>: NSViewRepresentable {
 }
 
 struct RootView: View {
+    private let performsLaunchPrewarm: Bool
+
+    init(
+        layoutModeController: LayoutModeController,
+        performsLaunchPrewarm: Bool = true
+    ) {
+        self.layoutModeController = layoutModeController
+        self.performsLaunchPrewarm = performsLaunchPrewarm
+        _isPrewarmingContent = State(initialValue: performsLaunchPrewarm)
+        _didPrewarmContent = State(initialValue: !performsLaunchPrewarm)
+    }
+
     /// A non-zero, visually imperceptible value keeps parked layers eligible
     /// for their one-time launch prewarm. Once that pass finishes, fully hide
     /// parked layers so Core Animation does not blend three full-window icon
@@ -286,12 +298,12 @@ struct RootView: View {
         .onAppear {
             showWelcome = !store.state.hasSeenWelcome
             clearSearchFocus()
-            if !store.isReloadingApps {
+            if performsLaunchPrewarm && !store.isReloadingApps {
                 prewarmContentLayers()
             }
         }
         .zizaiOnChange(of: store.isReloadingApps) { isReloading in
-            if !isReloading {
+            if performsLaunchPrewarm && !isReloading {
                 prewarmContentLayers()
             }
         }
