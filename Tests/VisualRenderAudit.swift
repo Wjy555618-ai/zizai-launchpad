@@ -609,9 +609,23 @@ enum VisualRenderAudit {
                 0.012
             )
         case "space", "appearanceTransitionSpace", "compactWindow", "storeSpace":
+            // The App Store fixture intentionally contains only three groups.
+            // Sample the actual 34pt label row instead of diluting the same
+            // semantic ink across the unused width above the canvas. This
+            // retains the foreground threshold while making it independent of
+            // OS-specific glyph antialiasing at the previous boundary value.
+            let groupNavigationInkRect =
+                layoutArgument == "storeSpace"
+                ? CGRect(x: 22, y: canvasSize.height - 54, width: 300, height: 34)
+                : CGRect(
+                    x: 10,
+                    y: canvasSize.height - 75,
+                    width: min(540, canvasSize.width - 20),
+                    height: 60
+                )
             validateSemanticInk(
                 "底部分组导航",
-                CGRect(x: 10, y: canvasSize.height - 75, width: min(540, canvasSize.width - 20), height: 60),
+                groupNavigationInkRect,
                 0.012
             )
             validateSemanticInk(
