@@ -1,4 +1,5 @@
 import AppKit
+import Combine
 import SwiftUI
 
 @MainActor
@@ -12,13 +13,30 @@ final class LayoutModeController: ObservableObject {
 
 private final class PrimaryLayerContainer<Content: View>: NSView {
     private let hostingView: NSHostingView<Content>
+    private let mode: LayoutMode
+    private let layoutModeController: LayoutModeController
     private(set) var revision: String
     private var colorScheme: ColorScheme
-    private var visibilityState: (isActive: Bool, parkedOpacity: Double, usesLayerVisibility: Bool)?
+    private var visibilityState:
+        (
+            isActive: Bool,
+            parkedOpacity: Double,
+            usesLayerVisibility: Bool,
+            followsSelection: Bool
+        )?
+    private var selectionCancellable: AnyCancellable?
     var acceptsInteraction = true
 
-    init(content: Content, revision: String, colorScheme: ColorScheme) {
+    init(
+        content: Content,
+        mode: LayoutMode,
+        layoutModeController: LayoutModeController,
+        revision: String,
+        colorScheme: ColorScheme
+    ) {
         hostingView = NSHostingView(rootView: content)
+        self.mode = mode
+        self.layoutModeController = layoutModeController
         self.revision = revision
         self.colorScheme = colorScheme
         super.init(frame: .zero)
@@ -34,6 +52,11 @@ private final class PrimaryLayerContainer<Content: View>: NSView {
             hostingView.topAnchor.constraint(equalTo: topAnchor),
             hostingView.bottomAnchor.constraint(equalTo: bottomAnchor),
         ])
+        selectionCancellable = layoutModeController.$selection
+            .removeDuplicates()
+            .sink { [weak self] selection in
+                self?.applySelection(selection)
+            }
     }
 
     @available(*, unavailable)
@@ -82,14 +105,40 @@ private final class PrimaryLayerContainer<Content: View>: NSView {
     func updateVisibility(
         isActive: Bool,
         parkedOpacity: Double,
-        usesLayerVisibility: Bool
+        usesLayerVisibility: Bool,
+        followsSelection: Bool
     ) {
         guard
             visibilityState?.isActive != isActive
                 || visibilityState?.parkedOpacity != parkedOpacity
                 || visibilityState?.usesLayerVisibility != usesLayerVisibility
+                || visibilityState?.followsSelection != followsSelection
         else { return }
-        visibilityState = (isActive, parkedOpacity, usesLayerVisibility)
+        visibilityState = (isActive, parkedOpacity, usesLayerVisibility, followsSelection)
+        applyVisibility(
+            isActive: isActive,
+            parkedOpacity: parkedOpacity,
+            usesLayerVisibility: usesLayerVisibility
+        )
+    }
+
+    private func applySelection(_ selection: LayoutMode) {
+        guard let visibilityState, visibilityState.followsSelection else { return }
+        let isActive = selection == mode
+        guard visibilityState.isActive != isActive else { return }
+        self.visibilityState?.isActive = isActive
+        applyVisibility(
+            isActive: isActive,
+            parkedOpacity: visibilityState.parkedOpacity,
+            usesLayerVisibility: visibilityState.usesLayerVisibility
+        )
+    }
+
+    private func applyVisibility(
+        isActive: Bool,
+        parkedOpacity: Double,
+        usesLayerVisibility: Bool
+    ) {
         acceptsInteraction = isActive
         // Keep inactive hosts paintable only during the one-time prewarm. Once
         // parkedOpacity reaches zero, the lightweight outer layer is the
@@ -127,9 +176,12 @@ private final class PrimaryLayerContainer<Content: View>: NSView {
 /// only this lightweight AppKit container, so hundreds of icon cells are not
 /// re-diffed or re-laid out merely to change the selected segment.
 private struct PersistentPrimaryLayer<Content: View>: NSViewRepresentable {
+    let mode: LayoutMode
+    let layoutModeController: LayoutModeController
     let revision: String
     let isActive: Bool
     let parkedOpacity: Double
+    let followsSelection: Bool
     let usesLayerVisibility: Bool
     let colorScheme: ColorScheme
     let content: Content
@@ -137,6 +189,8 @@ private struct PersistentPrimaryLayer<Content: View>: NSViewRepresentable {
     func makeNSView(context: Context) -> PrimaryLayerContainer<Content> {
         PrimaryLayerContainer(
             content: content,
+            mode: mode,
+            layoutModeController: layoutModeController,
             revision: revision,
             colorScheme: colorScheme
         )
@@ -151,7 +205,8 @@ private struct PersistentPrimaryLayer<Content: View>: NSViewRepresentable {
         nsView.updateVisibility(
             isActive: isActive,
             parkedOpacity: parkedOpacity,
-            usesLayerVisibility: usesLayerVisibility
+            usesLayerVisibility: usesLayerVisibility,
+            followsSelection: followsSelection
         )
     }
 }
@@ -184,7 +239,7 @@ struct RootView: View {
     @EnvironmentObject private var store: LauncherStore
     @Environment(\.accessibilityReduceMotion) private var systemReduceMotion
     @Environment(\.colorScheme) private var colorScheme
-    @ObservedObject var layoutModeController: LayoutModeController
+    let layoutModeController: LayoutModeController
 
     @State private var aliasTarget: AppInfo?
     @State private var aliasDraft = ""
@@ -263,15 +318,21 @@ struct RootView: View {
                 .zIndex(100)
 
             if let toast = store.toast {
-                ToastView(notice: toast, layoutMode: activeLayoutMode)
-                    .transition(ZizaiMotion.toastTransition)
-                    .zIndex(20)
+                ToastView(
+                    notice: toast,
+                    layoutModeController: layoutModeController
+                )
+                .transition(ZizaiMotion.toastTransition)
+                .zIndex(20)
             }
 
             if let message = store.errorMessage {
-                ErrorBanner(message: message, layoutMode: activeLayoutMode)
-                    .transition(ZizaiMotion.errorTransition)
-                    .zIndex(30)
+                ErrorBanner(
+                    message: message,
+                    layoutModeController: layoutModeController
+                )
+                .transition(ZizaiMotion.errorTransition)
+                .zIndex(30)
             }
 
             if isPrewarmingContent {
@@ -363,13 +424,11 @@ struct RootView: View {
 
     private var topChrome: some View {
         ZStack {
-            ViewModeSwitcher(
-                selection: Binding(
-                    get: { activeLayoutMode },
-                    set: { mode in
-                        activateLayoutMode(mode)
-                    }
-                )
+            LayoutModeSwitcherHost(
+                layoutModeController: layoutModeController,
+                onSelect: { mode in
+                    activateLayoutMode(mode)
+                }
             )
             .opacity(isSearchPresented ? 0 : 1)
             .allowsHitTesting(!isSearchPresented)
@@ -403,13 +462,11 @@ struct RootView: View {
                     .accessibilityHint("创建一个可以改名和调整大小的分组")
                     .accessibilityIdentifier(ZizaiAccessibilityID.newGroupButton)
 
-                    if activeLayoutMode == .allApps {
-                        AllAppsOptionsButton(
-                            selection: $allAppsFilter,
-                            isPresented: $isAllAppsOptionsPresented
-                        )
-                        .transition(ZizaiMotion.controlTransition)
-                    }
+                    LayoutModeAllAppsOptions(
+                        layoutModeController: layoutModeController,
+                        selection: $allAppsFilter,
+                        isPresented: $isAllAppsOptionsPresented
+                    )
 
                     Button {
                         isAllAppsOptionsPresented = false
@@ -477,9 +534,12 @@ struct RootView: View {
     private var primaryContentLayers: some View {
         ZStack {
             PersistentPrimaryLayer(
+                mode: .groups,
+                layoutModeController: layoutModeController,
                 revision: "groups",
                 isActive: renderedLayoutMode == .groups,
                 parkedOpacity: parkedLayerOpacity,
+                followsSelection: prewarmLayoutMode == nil,
                 usesLayerVisibility: usesLayerVisibility,
                 colorScheme: colorScheme,
                 content: GroupLibraryView(
@@ -493,9 +553,12 @@ struct RootView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
 
             PersistentPrimaryLayer(
+                mode: .space,
+                layoutModeController: layoutModeController,
                 revision: "space",
                 isActive: renderedLayoutMode == .space,
                 parkedOpacity: parkedLayerOpacity,
+                followsSelection: prewarmLayoutMode == nil,
                 usesLayerVisibility: usesLayerVisibility,
                 colorScheme: colorScheme,
                 content: SpaceCanvasView(
@@ -510,9 +573,12 @@ struct RootView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
 
             PersistentPrimaryLayer(
+                mode: .allApps,
+                layoutModeController: layoutModeController,
                 revision: allAppsFilter.rawValue,
                 isActive: renderedLayoutMode == .allApps,
                 parkedOpacity: parkedLayerOpacity,
+                followsSelection: prewarmLayoutMode == nil,
                 usesLayerVisibility: usesLayerVisibility,
                 colorScheme: colorScheme,
                 content: AllAppsView(
@@ -650,6 +716,36 @@ struct RootView: View {
         )
     }
 
+}
+
+private struct LayoutModeSwitcherHost: View {
+    @ObservedObject var layoutModeController: LayoutModeController
+    let onSelect: @MainActor @Sendable (LayoutMode) -> Void
+
+    var body: some View {
+        ViewModeSwitcher(
+            selection: Binding(
+                get: { layoutModeController.selection },
+                set: onSelect
+            )
+        )
+    }
+}
+
+private struct LayoutModeAllAppsOptions: View {
+    @ObservedObject var layoutModeController: LayoutModeController
+    @Binding var selection: AllAppsFilter
+    @Binding var isPresented: Bool
+
+    var body: some View {
+        if layoutModeController.selection == .allApps {
+            AllAppsOptionsButton(
+                selection: $selection,
+                isPresented: $isPresented
+            )
+            .transition(ZizaiMotion.controlTransition)
+        }
+    }
 }
 
 private struct ViewModeSwitcher: View {
@@ -865,7 +961,7 @@ final class IconCache {
 private struct ToastView: View {
     @EnvironmentObject private var store: LauncherStore
     let notice: ToastNotice
-    let layoutMode: LayoutMode
+    @ObservedObject var layoutModeController: LayoutModeController
 
     var body: some View {
         VStack {
@@ -887,7 +983,7 @@ private struct ToastView: View {
             .padding(.horizontal, 16)
             .frame(height: 42)
             .zizaiGlassCapsule(interactive: true)
-            .padding(.bottom, layoutMode == .space ? 82 : 22)
+            .padding(.bottom, layoutModeController.selection == .space ? 82 : 22)
         }
         .accessibilityElement(children: .contain)
     }
@@ -896,7 +992,7 @@ private struct ToastView: View {
 private struct ErrorBanner: View {
     @EnvironmentObject private var store: LauncherStore
     let message: String
-    let layoutMode: LayoutMode
+    @ObservedObject var layoutModeController: LayoutModeController
 
     var body: some View {
         VStack {
@@ -911,7 +1007,7 @@ private struct ErrorBanner: View {
             .padding(.horizontal, 16)
             .padding(.vertical, 10)
             .zizaiGlassCapsule()
-            .padding(.bottom, layoutMode == .space ? 84 : 24)
+            .padding(.bottom, layoutModeController.selection == .space ? 84 : 24)
         }
         .accessibilityElement(children: .combine)
         .accessibilityLabel("错误：\(message)")
