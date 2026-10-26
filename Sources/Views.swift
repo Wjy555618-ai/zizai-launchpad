@@ -86,14 +86,15 @@ private final class PrimaryLayerContainer<Content: View>: NSView {
         else { return }
         visibilityState = (isActive, parkedOpacity)
         acceptsInteraction = isActive
-        // Keep inactive hosts paintable only during the one-time prewarm.
-        // SwiftUI flattens hosted descendants into the window accessibility
-        // tree, so zero opacity and parent accessibility flags alone are not
-        // sufficient: the parked host must be hidden after prewarm.
-        hostingView.isHidden = !isActive && parkedOpacity <= 0.0001
-        alphaValue = isActive ? 1 : parkedOpacity
-        setAccessibilityHidden(!isActive)
-        hostingView.setAccessibilityHidden(!isActive)
+        // Keep inactive hosts paintable only during the one-time prewarm. Once
+        // parkedOpacity reaches zero, NSView visibility is the single source
+        // of truth for painting, hit testing and accessibility-tree exposure.
+        // Rewriting AX-hidden on this container and its large SwiftUI subtree
+        // during every switch duplicated that work and made the all-apps page
+        // miss the first-frame budget on slower machines.
+        let isPaintablePrewarmLayer = !isActive && parkedOpacity > 0.0001
+        hostingView.isHidden = !isActive && !isPaintablePrewarmLayer
+        alphaValue = isPaintablePrewarmLayer ? parkedOpacity : 1
     }
 
     override func hitTest(_ point: NSPoint) -> NSView? {
