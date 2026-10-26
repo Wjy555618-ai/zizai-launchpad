@@ -14,10 +14,16 @@ enum TabContentPerformanceAudit {
         store.state.hasSeenWelcome = true
         IconCache.shared.prewarm(paths: apps.map(\.path))
         let layoutModeController = LayoutModeController(selection: store.layoutMode)
+        var didCompleteLaunchPrewarm = false
 
         let hosting = NSHostingView(
-            rootView: RootView(layoutModeController: layoutModeController)
-                .environmentObject(store)
+            rootView: RootView(
+                layoutModeController: layoutModeController,
+                onLaunchPrewarmCompleted: {
+                    didCompleteLaunchPrewarm = true
+                }
+            )
+            .environmentObject(store)
         )
         hosting.frame = CGRect(x: 0, y: 0, width: 1_360, height: 860)
         let window = NSWindow(
@@ -29,7 +35,12 @@ enum TabContentPerformanceAudit {
         window.contentView = hosting
         window.orderBack(nil)
         hosting.layoutSubtreeIfNeeded()
-        RunLoop.current.run(until: Date().addingTimeInterval(0.35))
+        let prewarmDeadline = Date().addingTimeInterval(5)
+        while !didCompleteLaunchPrewarm && Date() < prewarmDeadline {
+            RunLoop.current.run(until: Date().addingTimeInterval(0.01))
+        }
+        require(didCompleteLaunchPrewarm, "生产页面预热没有在 5 秒内完成")
+        hosting.layoutSubtreeIfNeeded()
         hosting.displayIfNeeded()
 
         let modes: [LayoutMode] = [.space, .allApps, .groups]

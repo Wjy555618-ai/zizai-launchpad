@@ -132,13 +132,16 @@ private struct PersistentPrimaryLayer<Content: View>: NSViewRepresentable {
 
 struct RootView: View {
     private let performsLaunchPrewarm: Bool
+    private let onLaunchPrewarmCompleted: (() -> Void)?
 
     init(
         layoutModeController: LayoutModeController,
-        performsLaunchPrewarm: Bool = true
+        performsLaunchPrewarm: Bool = true,
+        onLaunchPrewarmCompleted: (() -> Void)? = nil
     ) {
         self.layoutModeController = layoutModeController
         self.performsLaunchPrewarm = performsLaunchPrewarm
+        self.onLaunchPrewarmCompleted = onLaunchPrewarmCompleted
         _isPrewarmingContent = State(initialValue: performsLaunchPrewarm)
         _didPrewarmContent = State(initialValue: !performsLaunchPrewarm)
     }
@@ -517,6 +520,13 @@ struct RootView: View {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.012) {
                     prewarmLayoutMode = nil
                     isPrewarmingContent = false
+                    DispatchQueue.main.async {
+                        for window in NSApp.windows {
+                            window.contentView?.layoutSubtreeIfNeeded()
+                            window.contentView?.displayIfNeeded()
+                        }
+                        onLaunchPrewarmCompleted?()
+                    }
                 }
                 return
             }
