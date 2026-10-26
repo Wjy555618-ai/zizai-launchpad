@@ -14,6 +14,7 @@ private final class PrimaryLayerContainer<Content: View>: NSView {
     private let hostingView: NSHostingView<Content>
     private(set) var revision: String
     private var colorScheme: ColorScheme
+    private var visibilityState: (isActive: Bool, parkedOpacity: Double)?
     var acceptsInteraction = true
 
     init(content: Content, revision: String, colorScheme: ColorScheme) {
@@ -79,6 +80,11 @@ private final class PrimaryLayerContainer<Content: View>: NSView {
     }
 
     func updateVisibility(isActive: Bool, parkedOpacity: Double) {
+        guard
+            visibilityState?.isActive != isActive
+                || visibilityState?.parkedOpacity != parkedOpacity
+        else { return }
+        visibilityState = (isActive, parkedOpacity)
         acceptsInteraction = isActive
         // Keep inactive hosts paintable only during the one-time prewarm.
         // SwiftUI flattens hosted descendants into the window accessibility
