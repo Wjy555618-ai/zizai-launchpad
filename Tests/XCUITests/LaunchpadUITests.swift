@@ -270,6 +270,13 @@ final class LaunchpadUITests: XCTestCase {
     private func assertCurrentScreen(navigation: XCUIElement, screen: XCUIElement) {
         XCTAssertTrue(screen.waitForExistence(timeout: 3))
         assertValue("selected", for: navigation)
+        for identifier in ["screen.groups", "screen.space", "screen.all-apps"]
+        where identifier != screen.identifier {
+            XCTAssertFalse(
+                element(identifier).exists,
+                "非当前页面仍暴露在辅助功能树中：\(identifier)"
+            )
+        }
     }
 
     @MainActor

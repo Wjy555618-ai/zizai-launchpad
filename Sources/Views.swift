@@ -87,18 +87,24 @@ private final class PrimaryLayerContainer<Content: View>: NSView {
         visibilityState = (isActive, parkedOpacity)
         acceptsInteraction = isActive
         // Keep inactive hosts paintable only during the one-time prewarm. Once
-        // parkedOpacity reaches zero, the lightweight outer container is the
-        // single source of truth for painting, hit testing and accessibility
-        // exposure. Hiding the inner NSHostingView would make AppKit revisit
-        // its large SwiftUI subtree when the all-apps page becomes visible.
+        // parkedOpacity reaches zero, the lightweight outer layer is the
+        // single source of truth for painting. The NSView remains mounted and
+        // laid out, so revealing all-apps never invalidates its large SwiftUI
+        // subtree. Interaction and AX exposure stop at this outer boundary.
         let isPaintablePrewarmLayer = !isActive && parkedOpacity > 0.0001
-        isHidden = !isActive && !isPaintablePrewarmLayer
+        layer?.isHidden = !isActive && !isPaintablePrewarmLayer
         alphaValue = isPaintablePrewarmLayer ? parkedOpacity : 1
+        setAccessibilityHidden(!isActive)
     }
 
     override func hitTest(_ point: NSPoint) -> NSView? {
         guard acceptsInteraction else { return nil }
         return super.hitTest(point)
+    }
+
+    override func accessibilityChildren() -> [Any]? {
+        guard acceptsInteraction else { return [] }
+        return super.accessibilityChildren()
     }
 }
 

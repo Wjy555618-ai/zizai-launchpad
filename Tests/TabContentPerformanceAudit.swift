@@ -43,18 +43,6 @@ enum TabContentPerformanceAudit {
         hosting.layoutSubtreeIfNeeded()
         hosting.displayIfNeeded()
 
-        let calibration = measureCPUCalibration()
-        require(
-            calibration.medianMilliseconds >= 3 && calibration.medianMilliseconds <= 30,
-            "托管机 CPU 标定超出可信范围：\(format(calibration.medianMilliseconds))ms"
-        )
-        // GitHub's shared Apple-silicon runners can vary their effective CPU
-        // allocation substantially between otherwise identical jobs. Express
-        // the frame budgets in stable reference-machine units while retaining
-        // raw CPU telemetry and the independent absolute-stall gate below.
-        let referenceCalibrationMilliseconds = 9.5
-        let cpuNormalizationScale = calibration.medianMilliseconds / referenceCalibrationMilliseconds
-
         let modes: [LayoutMode] = [.space, .allApps, .groups]
         // Use enough samples for P95 to describe sustained behavior instead
         // of collapsing to the single slowest frame (18 samples made P95 and
@@ -123,14 +111,10 @@ enum TabContentPerformanceAudit {
             Int(Double(allWallSamples.count - 1) * 0.99)
         )
         let combinedWallP99 = allWallSamples[p99Index]
-        let combinedRawCPUP99 = allCPUSamples[p99Index]
+        let combinedCPUP99 = allCPUSamples[p99Index]
         let absoluteWallMaximum = allWallSamples.last ?? .infinity
         let absoluteCPUMaximum = allCPUSamples.last ?? .infinity
-        let representativeNormalizedCPUP95 = representativeCPUP95 / cpuNormalizationScale
-        let combinedNormalizedCPUP99 = combinedRawCPUP99 / cpuNormalizationScale
-        if representativeNormalizedCPUP95 >= 16.7 || combinedNormalizedCPUP99 >= 34
-            || absoluteCPUMaximum >= 80
-        {
+        if representativeCPUP95 >= 16.7 || combinedCPUP99 >= 34 || absoluteCPUMaximum >= 80 {
             let details =
                 allLabeledSamples
                 .map {
@@ -140,14 +124,12 @@ enum TabContentPerformanceAudit {
             print("页面切换逐次耗时：\(details)")
         }
         require(
-            representativeNormalizedCPUP95 < 16.7,
-            "真实页面切换三批中位标准化 CPU P95 超过一帧 16.7ms："
-                + "\(format(representativeNormalizedCPUP95))ms（原始 \(format(representativeCPUP95))ms）"
+            representativeCPUP95 < 16.7,
+            "真实页面切换三批中位 CPU P95 超过一帧 16.7ms：\(format(representativeCPUP95))ms"
         )
         require(
-            combinedNormalizedCPUP99 < 34,
-            "真实页面切换整体标准化 CPU P99 超过两帧 34ms："
-                + "\(format(combinedNormalizedCPUP99))ms（原始 \(format(combinedRawCPUP99))ms）"
+            combinedCPUP99 < 34,
+            "真实页面切换整体 CPU P99 超过两帧 34ms：\(format(combinedCPUP99))ms"
         )
         require(
             absoluteCPUMaximum < 80,
@@ -160,37 +142,11 @@ enum TabContentPerformanceAudit {
             "页面切换首帧准备验收通过：3 批各 \(sampleCount) 次切换，"
                 + "wall P95 \(batchWallSummary)ms，中位 \(format(representativeWallP95))ms，"
                 + "整体 wall P99 \(format(combinedWallP99))ms；"
-                + "原始 CPU P95 \(batchCPUSummary)ms，中位 \(format(representativeCPUP95))ms，"
-                + "整体原始 CPU P99 \(format(combinedRawCPUP99))ms；"
-                + "标定 \(format(calibration.medianMilliseconds))ms（校验 \(String(calibration.digest, radix: 16))），"
-                + "标准化比例 \(format(cpuNormalizationScale))，"
-                + "标准化 CPU P95 \(format(representativeNormalizedCPUP95))ms / "
-                + "P99 \(format(combinedNormalizedCPUP99))ms，"
+                + "CPU P95 \(batchCPUSummary)ms，中位 \(format(representativeCPUP95))ms，"
+                + "整体 CPU P99 \(format(combinedCPUP99))ms，"
                 + "wall 绝对峰值 \(format(absoluteWallMaximum))ms，"
                 + "主线程 CPU 峰值 \(format(absoluteCPUMaximum))ms。"
         )
-    }
-
-    private static func measureCPUCalibration() -> (medianMilliseconds: Double, digest: UInt64) {
-        var samples: [Double] = []
-        var digest = DispatchTime.now().uptimeNanoseconds
-        for index in 0..<7 {
-            let start = threadCPUTimeNanoseconds()
-            digest ^= calibrationWorkload(seed: digest &+ UInt64(index))
-            samples.append(Double(threadCPUTimeNanoseconds() - start) / 1_000_000)
-        }
-        let sorted = samples.sorted()
-        return (sorted[sorted.count / 2], digest)
-    }
-
-    @inline(never)
-    private static func calibrationWorkload(seed: UInt64) -> UInt64 {
-        var value = seed
-        for index in 0..<6_000_000 {
-            value = value &* 6_364_136_223_846_793_005 &+ UInt64(index) &+ 1_442_695_040_888_963_407
-            value ^= value >> 29
-        }
-        return value
     }
 
     private static func threadCPUTimeNanoseconds() -> UInt64 {
