@@ -25,19 +25,17 @@ struct LayoutModeSwitcherHost: View {
     }
 }
 
-struct LayoutModeAllAppsOptions: View {
-    @ObservedObject var layoutModeController: LayoutModeController
+struct AppCatalogOptionsHost: View {
     @Binding var selection: AllAppsFilter
     @Binding var isPresented: Bool
+    let onSelectFilter: (AllAppsFilter) -> Void
 
     var body: some View {
-        if layoutModeController.selection == .allApps {
-            AllAppsOptionsButton(
-                selection: $selection,
-                isPresented: $isPresented
-            )
-            .transition(ZizaiMotion.controlTransition)
-        }
+        AppCatalogOptionsButton(
+            selection: selection,
+            isPresented: $isPresented,
+            onSelectFilter: onSelectFilter
+        )
     }
 }
 

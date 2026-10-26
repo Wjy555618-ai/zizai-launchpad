@@ -51,7 +51,15 @@ enum TabContentPerformanceAudit {
         let sampleCount = 60
         var batchWallP95s: [Double] = []
         var batchCPUP95s: [Double] = []
-        var allLabeledSamples: [(mode: LayoutMode, wall: Double, cpu: Double)] = []
+        var allLabeledSamples:
+            [(
+                mode: LayoutMode,
+                wall: Double,
+                cpu: Double,
+                selectionCPU: Double,
+                persistenceCPU: Double,
+                layoutCPU: Double
+            )] = []
 
         // A hosted runner can deschedule this process or WindowServer in the
         // middle of a switch, so wall time includes external waits that the
@@ -69,22 +77,36 @@ enum TabContentPerformanceAudit {
             var cpuSamples: [Double] = []
             for index in 0..<sampleCount {
                 let mode = modes[index % modes.count]
-                let (wallDuration, cpuDuration) = autoreleasepool {
+                let (wallDuration, cpuDuration, selectionCPU, persistenceCPU, layoutCPU) = autoreleasepool {
                     let wallStart = DispatchTime.now().uptimeNanoseconds
                     let cpuStart = threadCPUTimeNanoseconds()
                     layoutModeController.selection = mode
+                    let selectionCPU = threadCPUTimeNanoseconds()
                     store.stageLayoutModePersistence(mode)
+                    let persistenceCPU = threadCPUTimeNanoseconds()
                     hosting.layoutSubtreeIfNeeded()
                     let cpuEnd = threadCPUTimeNanoseconds()
                     let wallEnd = DispatchTime.now().uptimeNanoseconds
                     return (
                         Double(wallEnd - wallStart) / 1_000_000,
-                        Double(cpuEnd - cpuStart) / 1_000_000
+                        Double(cpuEnd - cpuStart) / 1_000_000,
+                        Double(selectionCPU - cpuStart) / 1_000_000,
+                        Double(persistenceCPU - selectionCPU) / 1_000_000,
+                        Double(cpuEnd - persistenceCPU) / 1_000_000
                     )
                 }
                 wallSamples.append(wallDuration)
                 cpuSamples.append(cpuDuration)
-                allLabeledSamples.append((mode, wallDuration, cpuDuration))
+                allLabeledSamples.append(
+                    (
+                        mode,
+                        wallDuration,
+                        cpuDuration,
+                        selectionCPU,
+                        persistenceCPU,
+                        layoutCPU
+                    )
+                )
 
                 // A real second click cannot arrive before AppKit finishes the
                 // current event. Drain deferred display work between samples
@@ -119,6 +141,8 @@ enum TabContentPerformanceAudit {
                 allLabeledSamples
                 .map {
                     "\($0.mode.rawValue)=wall \(format($0.wall))ms/cpu \(format($0.cpu))ms"
+                        + "（选择 \(format($0.selectionCPU))ms，持久化 \(format($0.persistenceCPU))ms，"
+                        + "布局 \(format($0.layoutCPU))ms）"
                 }
                 .joined(separator: "，")
             print("页面切换逐次耗时：\(details)")
@@ -138,6 +162,13 @@ enum TabContentPerformanceAudit {
 
         let batchWallSummary = batchWallP95s.map(format).joined(separator: "ms / ")
         let batchCPUSummary = batchCPUP95s.map(format).joined(separator: "ms / ")
+        let modeSummary = modes.map { mode in
+            let samples = allLabeledSamples.filter { $0.mode == mode }
+            return "\(mode.rawValue) CPU P95 \(format(percentile95(samples.map(\.cpu))))ms"
+                + "（选择 \(format(percentile95(samples.map(\.selectionCPU))))ms，"
+                + "持久化 \(format(percentile95(samples.map(\.persistenceCPU))))ms，"
+                + "布局 \(format(percentile95(samples.map(\.layoutCPU))))ms）"
+        }.joined(separator: "；")
         print(
             "页面切换首帧准备验收通过：3 批各 \(sampleCount) 次切换，"
                 + "wall P95 \(batchWallSummary)ms，中位 \(format(representativeWallP95))ms，"
@@ -145,7 +176,7 @@ enum TabContentPerformanceAudit {
                 + "CPU P95 \(batchCPUSummary)ms，中位 \(format(representativeCPUP95))ms，"
                 + "整体 CPU P99 \(format(combinedCPUP99))ms，"
                 + "wall 绝对峰值 \(format(absoluteWallMaximum))ms，"
-                + "主线程 CPU 峰值 \(format(absoluteCPUMaximum))ms。"
+                + "主线程 CPU 峰值 \(format(absoluteCPUMaximum))ms；\(modeSummary)。"
         )
     }
 
@@ -159,6 +190,12 @@ enum TabContentPerformanceAudit {
 
     private static func format(_ value: Double) -> String {
         String(format: "%.3f", value)
+    }
+
+    private static func percentile95(_ values: [Double]) -> Double {
+        let sorted = values.sorted()
+        guard !sorted.isEmpty else { return .infinity }
+        return sorted[min(sorted.count - 1, Int(Double(sorted.count) * 0.95))]
     }
 
     private static func require(_ condition: @autoclosure () -> Bool, _ message: String) {

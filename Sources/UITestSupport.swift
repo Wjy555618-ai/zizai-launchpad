@@ -9,6 +9,7 @@ enum ZizaiAccessibilityID {
     static let searchField = "search.field"
     static let searchResultsHeading = "search.results.heading"
     static let newGroupButton = "group.new"
+    static let appCatalogOptionsButton = "app-catalog.options"
     static let helpButton = "help.open"
     static let helpHeading = "help.heading"
     static let groupEditorHeading = "group-editor.heading"
@@ -40,6 +41,14 @@ enum ZizaiAccessibilityID {
 
     static func appTile(_ appID: String) -> String {
         "app.tile.\(appID)"
+    }
+
+    static func appCatalogFilter(_ filter: AllAppsFilter) -> String {
+        switch filter {
+        case .all: return "app-catalog.filter.all"
+        case .visible: return "app-catalog.filter.visible"
+        case .hidden: return "app-catalog.filter.hidden"
+        }
     }
 
     private static func modeIdentifier(_ mode: LayoutMode) -> String {

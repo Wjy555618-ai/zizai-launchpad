@@ -178,6 +178,24 @@ final class LaunchpadUITests: XCTestCase {
     }
 
     @MainActor
+    func testCatalogFilterIsGloballyDiscoverableAndNavigatesToAllApps() {
+        launchApplication()
+        let options = element("app-catalog.options")
+        XCTAssertTrue(options.waitForExistence(timeout: 3))
+        XCTAssertTrue(options.isHittable)
+
+        options.click()
+        let hiddenFilter = element("app-catalog.filter.hidden")
+        XCTAssertTrue(hiddenFilter.waitForExistence(timeout: 3))
+        hiddenFilter.click()
+
+        assertCurrentScreen(
+            navigation: element("navigation.all-apps"),
+            screen: element("screen.all-apps")
+        )
+    }
+
+    @MainActor
     func testCanvasZoomControlsExposeAndChangeState() {
         launchApplication()
         navigate(to: element("navigation.space"), screen: element("screen.space"))

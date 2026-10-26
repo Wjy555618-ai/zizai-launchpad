@@ -251,10 +251,13 @@ struct RootView: View {
                     .accessibilityHint("创建一个可以改名和调整大小的分组")
                     .accessibilityIdentifier(ZizaiAccessibilityID.newGroupButton)
 
-                    LayoutModeAllAppsOptions(
-                        layoutModeController: layoutModeController,
+                    AppCatalogOptionsHost(
                         selection: $allAppsFilter,
-                        isPresented: $isAllAppsOptionsPresented
+                        isPresented: $isAllAppsOptionsPresented,
+                        onSelectFilter: { filter in
+                            allAppsFilter = filter
+                            activateLayoutMode(.allApps)
+                        }
                     )
 
                     Button {

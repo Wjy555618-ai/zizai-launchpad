@@ -157,18 +157,14 @@ struct AllAppsView: View {
     }
 }
 
-struct AllAppsOptionsButton: View {
+struct AppCatalogOptionsButton: View {
     @EnvironmentObject private var store: LauncherStore
-    @Binding var selection: AllAppsFilter
+    let selection: AllAppsFilter
     @Binding var isPresented: Bool
-    @State private var isTriggerHovered = false
-    @State private var isPopoverHovered = false
-    @State private var openWorkItem: DispatchWorkItem?
-    @State private var closeWorkItem: DispatchWorkItem?
+    let onSelectFilter: (AllAppsFilter) -> Void
 
     var body: some View {
         Button {
-            cancelPendingWork()
             isPresented.toggle()
         } label: {
             Image(systemName: "line.3.horizontal.decrease")
@@ -180,7 +176,6 @@ struct AllAppsOptionsButton: View {
         }
         .buttonStyle(.plain)
         .zizaiGlassCapsule(interactive: true)
-        .onHover(perform: handleTriggerHover)
         .popover(isPresented: $isPresented, arrowEdge: .top) {
             VStack(spacing: 4) {
                 ForEach(AllAppsFilter.allCases) { item in
@@ -188,9 +183,10 @@ struct AllAppsOptionsButton: View {
                         title: item.rawValue,
                         systemImage: "checkmark",
                         reservesImageSpace: true,
-                        showsImage: selection == item
+                        showsImage: selection == item,
+                        accessibilityIdentifier: ZizaiAccessibilityID.appCatalogFilter(item)
                     ) {
-                        selection = item
+                        onSelectFilter(item)
                         isPresented = false
                     }
                     .accessibilityValue(selection == item ? "已选中" : "")
@@ -203,7 +199,8 @@ struct AllAppsOptionsButton: View {
                     title: "重新扫描",
                     systemImage: "arrow.clockwise",
                     reservesImageSpace: true,
-                    showsImage: true
+                    showsImage: true,
+                    accessibilityIdentifier: "app-catalog.rescan"
                 ) {
                     isPresented = false
                     store.reloadApps(announce: true)
@@ -211,56 +208,14 @@ struct AllAppsOptionsButton: View {
             }
             .padding(8)
             .frame(width: 178)
-            .onHover(perform: handlePopoverHover)
             .onExitCommand {
                 isPresented = false
             }
         }
-        .help("筛选与重新扫描")
-        .accessibilityLabel("筛选与重新扫描")
-        .accessibilityHint("显示全部、正在显示、已隐藏和重新扫描选项")
-        .onDisappear(perform: cancelPendingWork)
-    }
-
-    private func handleTriggerHover(_ hovering: Bool) {
-        isTriggerHovered = hovering
-        if hovering {
-            closeWorkItem?.cancel()
-            let workItem = DispatchWorkItem {
-                guard isTriggerHovered else { return }
-                isPresented = true
-            }
-            openWorkItem?.cancel()
-            openWorkItem = workItem
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.14, execute: workItem)
-        } else {
-            openWorkItem?.cancel()
-            scheduleClose()
-        }
-    }
-
-    private func handlePopoverHover(_ hovering: Bool) {
-        isPopoverHovered = hovering
-        if hovering {
-            closeWorkItem?.cancel()
-        } else {
-            scheduleClose()
-        }
-    }
-
-    private func scheduleClose() {
-        closeWorkItem?.cancel()
-        let workItem = DispatchWorkItem {
-            guard !isTriggerHovered && !isPopoverHovered else { return }
-            isPresented = false
-        }
-        closeWorkItem = workItem
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.28, execute: workItem)
-    }
-
-    private func cancelPendingWork() {
-        openWorkItem?.cancel()
-        closeWorkItem?.cancel()
+        .help("应用显示与扫描")
+        .accessibilityLabel("应用显示与扫描")
+        .accessibilityHint("筛选全部应用，或重新扫描本机应用")
+        .accessibilityIdentifier(ZizaiAccessibilityID.appCatalogOptionsButton)
     }
 }
 
@@ -269,6 +224,7 @@ private struct AllAppsOptionsRow: View {
     let systemImage: String
     let reservesImageSpace: Bool
     let showsImage: Bool
+    let accessibilityIdentifier: String
     let action: () -> Void
 
     @State private var isHovered = false
@@ -302,6 +258,7 @@ private struct AllAppsOptionsRow: View {
         .onHover { isHovered = $0 }
         .zizaiAnimation(ZizaiMotion.hover, value: isHovered)
         .accessibilityLabel(title)
+        .accessibilityIdentifier(accessibilityIdentifier)
     }
 }
 
