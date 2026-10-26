@@ -14,7 +14,7 @@ private final class PrimaryLayerContainer<Content: View>: NSView {
     private let hostingView: NSHostingView<Content>
     private(set) var revision: String
     private var colorScheme: ColorScheme
-    private var visibilityState: (isActive: Bool, parkedOpacity: Double)?
+    private var visibilityState: (isActive: Bool, parkedOpacity: Double, usesLayerVisibility: Bool)?
     var acceptsInteraction = true
 
     init(content: Content, revision: String, colorScheme: ColorScheme) {
@@ -79,12 +79,17 @@ private final class PrimaryLayerContainer<Content: View>: NSView {
         hostingView.appearance = window?.effectiveAppearance ?? effectiveAppearance
     }
 
-    func updateVisibility(isActive: Bool, parkedOpacity: Double) {
+    func updateVisibility(
+        isActive: Bool,
+        parkedOpacity: Double,
+        usesLayerVisibility: Bool
+    ) {
         guard
             visibilityState?.isActive != isActive
                 || visibilityState?.parkedOpacity != parkedOpacity
+                || visibilityState?.usesLayerVisibility != usesLayerVisibility
         else { return }
-        visibilityState = (isActive, parkedOpacity)
+        visibilityState = (isActive, parkedOpacity, usesLayerVisibility)
         acceptsInteraction = isActive
         // Keep inactive hosts paintable only during the one-time prewarm. Once
         // parkedOpacity reaches zero, the lightweight outer layer is the
@@ -92,7 +97,17 @@ private final class PrimaryLayerContainer<Content: View>: NSView {
         // laid out, so revealing all-apps never invalidates its large SwiftUI
         // subtree. Interaction and AX exposure stop at this outer boundary.
         let isPaintablePrewarmLayer = !isActive && parkedOpacity > 0.0001
-        layer?.isHidden = !isActive && !isPaintablePrewarmLayer
+        let shouldHide = !isActive && !isPaintablePrewarmLayer
+        if usesLayerVisibility {
+            isHidden = false
+            layer?.isHidden = shouldHide
+        } else {
+            // NSView.cacheDisplay intentionally bypasses Core Animation's
+            // hidden-layer state. Off-screen release evidence therefore uses
+            // the equivalent view boundary so it captures only the active page.
+            layer?.isHidden = false
+            isHidden = shouldHide
+        }
         alphaValue = isPaintablePrewarmLayer ? parkedOpacity : 1
         setAccessibilityHidden(!isActive)
     }
@@ -115,6 +130,7 @@ private struct PersistentPrimaryLayer<Content: View>: NSViewRepresentable {
     let revision: String
     let isActive: Bool
     let parkedOpacity: Double
+    let usesLayerVisibility: Bool
     let colorScheme: ColorScheme
     let content: Content
 
@@ -132,21 +148,28 @@ private struct PersistentPrimaryLayer<Content: View>: NSViewRepresentable {
             revision: revision,
             colorScheme: colorScheme
         )
-        nsView.updateVisibility(isActive: isActive, parkedOpacity: parkedOpacity)
+        nsView.updateVisibility(
+            isActive: isActive,
+            parkedOpacity: parkedOpacity,
+            usesLayerVisibility: usesLayerVisibility
+        )
     }
 }
 
 struct RootView: View {
     private let performsLaunchPrewarm: Bool
+    private let usesLayerVisibility: Bool
     private let onLaunchPrewarmCompleted: (() -> Void)?
 
     init(
         layoutModeController: LayoutModeController,
         performsLaunchPrewarm: Bool = true,
+        usesLayerVisibility: Bool = true,
         onLaunchPrewarmCompleted: (() -> Void)? = nil
     ) {
         self.layoutModeController = layoutModeController
         self.performsLaunchPrewarm = performsLaunchPrewarm
+        self.usesLayerVisibility = usesLayerVisibility
         self.onLaunchPrewarmCompleted = onLaunchPrewarmCompleted
         _isPrewarmingContent = State(initialValue: performsLaunchPrewarm)
         _didPrewarmContent = State(initialValue: !performsLaunchPrewarm)
@@ -457,6 +480,7 @@ struct RootView: View {
                 revision: "groups",
                 isActive: renderedLayoutMode == .groups,
                 parkedOpacity: parkedLayerOpacity,
+                usesLayerVisibility: usesLayerVisibility,
                 colorScheme: colorScheme,
                 content: GroupLibraryView(
                     aliasTarget: $aliasTarget,
@@ -472,6 +496,7 @@ struct RootView: View {
                 revision: "space",
                 isActive: renderedLayoutMode == .space,
                 parkedOpacity: parkedLayerOpacity,
+                usesLayerVisibility: usesLayerVisibility,
                 colorScheme: colorScheme,
                 content: SpaceCanvasView(
                     shouldCaptureInput: { layoutModeController.selection == .space },
@@ -488,6 +513,7 @@ struct RootView: View {
                 revision: allAppsFilter.rawValue,
                 isActive: renderedLayoutMode == .allApps,
                 parkedOpacity: parkedLayerOpacity,
+                usesLayerVisibility: usesLayerVisibility,
                 colorScheme: colorScheme,
                 content: AllAppsView(
                     aliasTarget: $aliasTarget,

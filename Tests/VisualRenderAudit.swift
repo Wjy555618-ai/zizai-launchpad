@@ -132,7 +132,10 @@ enum VisualRenderAudit {
                 // Store and accessibility evidence represents the settled
                 // product surface. Do not race the production-only launch
                 // prewarm overlay against a fixed hosted-runner delay.
-                performsLaunchPrewarm: false
+                performsLaunchPrewarm: false,
+                // cacheDisplay renders the AppKit view tree without applying
+                // Core Animation's hidden-layer state.
+                usesLayerVisibility: false
             )
             .environmentObject(store)
             if layoutArgument.hasPrefix("appearanceTransition") {
