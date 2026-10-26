@@ -1,20 +1,37 @@
 import AppKit
-import Combine
 import SwiftUI
 
 @MainActor
+private protocol LayoutModeSelectionObserver: AnyObject {
+    func layoutModeSelectionDidChange(_ selection: LayoutMode)
+}
+
+@MainActor
 final class LayoutModeController: ObservableObject {
-    @Published var selection: LayoutMode
+    @Published var selection: LayoutMode {
+        didSet {
+            guard selection != oldValue else { return }
+            for observer in selectionObservers.allObjects {
+                (observer as? any LayoutModeSelectionObserver)?
+                    .layoutModeSelectionDidChange(selection)
+            }
+        }
+    }
+
+    private let selectionObservers = NSHashTable<AnyObject>.weakObjects()
 
     init(selection: LayoutMode) {
         self.selection = selection
     }
+
+    fileprivate func addSelectionObserver(_ observer: any LayoutModeSelectionObserver) {
+        selectionObservers.add(observer)
+    }
 }
 
-private final class PrimaryLayerContainer<Content: View>: NSView {
+private final class PrimaryLayerContainer<Content: View>: NSView, LayoutModeSelectionObserver {
     private let hostingView: NSHostingView<Content>
     private let mode: LayoutMode
-    private let layoutModeController: LayoutModeController
     private(set) var revision: String
     private var colorScheme: ColorScheme
     private var visibilityState:
@@ -24,7 +41,6 @@ private final class PrimaryLayerContainer<Content: View>: NSView {
             usesLayerVisibility: Bool,
             followsSelection: Bool
         )?
-    private var selectionCancellable: AnyCancellable?
     var acceptsInteraction = true
 
     init(
@@ -36,7 +52,6 @@ private final class PrimaryLayerContainer<Content: View>: NSView {
     ) {
         hostingView = NSHostingView(rootView: content)
         self.mode = mode
-        self.layoutModeController = layoutModeController
         self.revision = revision
         self.colorScheme = colorScheme
         super.init(frame: .zero)
@@ -52,11 +67,7 @@ private final class PrimaryLayerContainer<Content: View>: NSView {
             hostingView.topAnchor.constraint(equalTo: topAnchor),
             hostingView.bottomAnchor.constraint(equalTo: bottomAnchor),
         ])
-        selectionCancellable = layoutModeController.$selection
-            .removeDuplicates()
-            .sink { [weak self] selection in
-                self?.applySelection(selection)
-            }
+        layoutModeController.addSelectionObserver(self)
     }
 
     @available(*, unavailable)
@@ -122,7 +133,7 @@ private final class PrimaryLayerContainer<Content: View>: NSView {
         )
     }
 
-    private func applySelection(_ selection: LayoutMode) {
+    func layoutModeSelectionDidChange(_ selection: LayoutMode) {
         guard let visibilityState, visibilityState.followsSelection else { return }
         let isActive = selection == mode
         guard visibilityState.isActive != isActive else { return }
@@ -426,9 +437,8 @@ struct RootView: View {
         ZStack {
             LayoutModeSwitcherHost(
                 layoutModeController: layoutModeController,
-                onSelect: { mode in
-                    activateLayoutMode(mode)
-                }
+                isAllAppsOptionsPresented: $isAllAppsOptionsPresented,
+                reduceMotion: reduceMotion
             )
             .opacity(isSearchPresented ? 0 : 1)
             .allowsHitTesting(!isSearchPresented)
@@ -719,14 +729,24 @@ struct RootView: View {
 }
 
 private struct LayoutModeSwitcherHost: View {
+    @EnvironmentObject private var store: LauncherStore
     @ObservedObject var layoutModeController: LayoutModeController
-    let onSelect: @MainActor @Sendable (LayoutMode) -> Void
+    @Binding var isAllAppsOptionsPresented: Bool
+    let reduceMotion: Bool
 
     var body: some View {
         ViewModeSwitcher(
             selection: Binding(
                 get: { layoutModeController.selection },
-                set: onSelect
+                set: { mode in
+                    guard layoutModeController.selection != mode else { return }
+                    isAllAppsOptionsPresented = false
+                    zizaiAnimate(ZizaiMotion.selection, reduceMotion: reduceMotion) {
+                        layoutModeController.selection = mode
+                    }
+                    NSApp.keyWindow?.makeFirstResponder(nil)
+                    store.stageLayoutModePersistence(mode)
+                }
             )
         )
     }
