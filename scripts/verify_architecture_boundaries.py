@@ -154,8 +154,23 @@ def main() -> None:
         if required_contract not in visual_reproducibility:
             fail(f"视觉可重复性门槛缺少 {required_contract}")
     workflow = QUALITY_WORKFLOW.read_text(encoding="utf-8")
-    if "stage: [core, runtime]" not in workflow:
-        fail("GitHub Actions 没有并行覆盖 core/runtime 两个职责阶段")
+    for xcode in ("26.2", "26.6"):
+        for stage, runner in (
+            ("core", "macos-26-intel"),
+            ("runtime", "macos-26"),
+        ):
+            matrix_entry = (
+                f'- xcode: "{xcode}"\n'
+                f"            stage: {stage}\n"
+                f"            runner: {runner}"
+            )
+            if matrix_entry not in workflow:
+                fail(
+                    "GitHub Actions 缺少"
+                    f" {stage} / Xcode {xcode} / {runner} 责任矩阵"
+                )
+    if "runs-on: ${{ matrix.runner }}" not in workflow:
+        fail("GitHub Actions 没有按职责矩阵选择受支持的运行架构")
     if "--hosted-ci-${{ matrix.stage }}" not in workflow:
         fail("GitHub Actions 没有通过统一发布入口执行分阶段门槛")
 

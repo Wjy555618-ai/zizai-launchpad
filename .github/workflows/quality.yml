@@ -16,16 +16,30 @@ concurrency:
 jobs:
   verify:
     name: ${{ matrix.stage }} / Xcode ${{ matrix.xcode }}
-    # The Intel runner deliberately complements the physical Apple Silicon
-    # development machine and exercises the other Universal 2 architecture.
-    # Hosted jobs compile the UI suite but do not claim an interactive run.
-    runs-on: macos-26-intel
+    # Core stays on Intel to exercise the other Universal 2 architecture.
+    # Runtime uses Apple Silicon because the current macOS 26 Intel image has
+    # a confirmed IconServices crash loop that can hang every AppKit icon
+    # request indefinitely: https://github.com/actions/runner-images/issues/14751
+    # Routing the real runtime audit to an unaffected runner preserves the
+    # rendering contract instead of disabling IconServices or raising timeouts.
+    runs-on: ${{ matrix.runner }}
     timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
-        xcode: ["26.2", "26.6"]
-        stage: [core, runtime]
+        include:
+          - xcode: "26.2"
+            stage: core
+            runner: macos-26-intel
+          - xcode: "26.6"
+            stage: core
+            runner: macos-26-intel
+          - xcode: "26.2"
+            stage: runtime
+            runner: macos-26
+          - xcode: "26.6"
+            stage: runtime
+            runner: macos-26
 
     steps:
       - name: Check out source
