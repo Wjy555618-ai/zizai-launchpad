@@ -20,6 +20,7 @@ mkdir -p "$ARTIFACT_DIR"
   -framework UniformTypeIdentifiers \
   "$PROJECT_DIR/Sources/Models.swift" \
   "$PROJECT_DIR/Sources/AppScanner.swift" \
+  "$PROJECT_DIR/Sources/ApplicationRemovalAuthorizationScope.swift" \
   "$PROJECT_DIR/Sources/ApplicationFolderAccess.swift" \
   "$PROJECT_DIR/Sources/LaunchPresentation.swift" \
   "$PROJECT_DIR/Sources/LoginItemSettings.swift" \

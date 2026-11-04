@@ -104,9 +104,15 @@ COPYFILE_DISABLE=1 /usr/bin/ditto --norsrc --noextattr --noacl "$SOURCE_DSYM" "$
   --force \
   --deep \
   --sign - \
+  --requirements "=designated => identifier \"$BUILD_BUNDLE_ID\"" \
   --entitlements "$ENTITLEMENTS" \
   "$APP_DIR" >/dev/null
 /usr/bin/codesign --verify --deep --strict "$APP_DIR"
+DESIGNATED_REQUIREMENT="$(/usr/bin/codesign -dr - "$APP_DIR" 2>&1)"
+[[ "$DESIGNATED_REQUIREMENT" == *"designated => identifier \"$BUILD_BUNDLE_ID\""* ]] \
+  || fail "本地安装包缺少稳定的指定签名要求。"
+[[ "$DESIGNATED_REQUIREMENT" != *"cdhash"* ]] \
+  || fail "本地安装包仍以易变 CDHash 作为权限身份。"
 
 ARCHITECTURES="$(/usr/bin/lipo -archs "$APP_BINARY")"
 [[ "$ARCHITECTURES" == *"arm64"* && "$ARCHITECTURES" == *"x86_64"* ]] \

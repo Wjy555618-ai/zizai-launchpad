@@ -22,6 +22,9 @@ struct GroupMoreMenuIcon: View {
 
 struct AppIconContent: View {
     @EnvironmentObject private var store: LauncherStore
+    @EnvironmentObject private var removalCoordinator: ApplicationRemovalCoordinator
+    @Environment(\.primaryLayerIsActive) private var primaryLayerIsActive
+    @Environment(\.accessibilityReduceMotion) private var systemReduceMotion
     let app: AppInfo
     let size: CGFloat
     var showName = true
@@ -32,6 +35,13 @@ struct AppIconContent: View {
     @State private var isDetailHovered = false
     @State private var tooltipAnchorID = UUID().uuidString
 
+    private var isJiggling: Bool {
+        primaryLayerIsActive
+            && removalCoordinator.isManaging
+            && removalCoordinator.completingAppID != app.id
+            && !ZizaiAccessibilityPreferences.reduceMotion(systemValue: systemReduceMotion)
+    }
+
     var body: some View {
         let effectiveScale = max(0.01, layoutScale)
         let renderedSize = size * effectiveScale
@@ -40,15 +50,14 @@ struct AppIconContent: View {
 
         VStack(spacing: 7 * effectiveScale) {
             ZStack(alignment: .topTrailing) {
-                Image(nsImage: icon)
-                    .resizable()
-                    .interpolation(.high)
-                    .frame(width: renderedSize, height: renderedSize)
-                    .shadow(
-                        color: .black.opacity(ZizaiShadow.iconOpacity),
-                        radius: renderedSize * ZizaiShadow.iconRadiusScale,
-                        y: renderedSize * ZizaiShadow.iconYScale
-                    )
+                ApplicationManagementJiggleIcon(
+                    image: icon,
+                    renderedSize: renderedSize,
+                    identifier: app.id,
+                    isJiggling: isJiggling
+                )
+                .frame(width: renderedSize, height: renderedSize)
+                .accessibilityHidden(true)
 
                 if isHidden {
                     Image(systemName: "eye.slash.fill")
@@ -60,11 +69,12 @@ struct AppIconContent: View {
                 }
             }
             .frame(width: renderedSize, height: renderedSize)
+            .applicationIconAnchor()
             .background {
                 AppTooltipWindowAnchor(
                     id: tooltipAnchorID,
                     text: detailText,
-                    isPresented: isDetailHovered && !detailText.isEmpty
+                    isPresented: primaryLayerIsActive && isDetailHovered && !detailText.isEmpty
                 )
             }
 
@@ -95,7 +105,10 @@ struct AppIconContent: View {
             RoundedRectangle(cornerRadius: ZizaiRadius.panel * effectiveScale, style: .continuous)
                 .fill(isSelected ? Palette.accent.opacity(0.12) : Color.clear)
         )
-        .onHover { isDetailHovered = $0 }
+        .onHover { isDetailHovered = primaryLayerIsActive && $0 }
+        .zizaiOnChange(of: primaryLayerIsActive) { isActive in
+            if !isActive { isDetailHovered = false }
+        }
         .zizaiAnimation(ZizaiMotion.hover, value: isDetailHovered)
         .accessibilityLabel(
             [store.displayName(for: app), store.instanceLabel(for: app)]

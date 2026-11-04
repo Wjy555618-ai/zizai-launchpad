@@ -11,6 +11,8 @@ import SwiftUI
 final class AppTooltipPanelController {
     static let shared = AppTooltipPanelController()
 
+    static let fadeInDuration: TimeInterval = 0.10
+    static let fadeOutDuration: TimeInterval = 0.08
     private static let shadowClearance: CGFloat = 16
     private var panel: NSPanel?
     private var hostingView: NSHostingView<AppTooltipPanelContent>?
@@ -18,6 +20,8 @@ final class AppTooltipPanelController {
     private weak var anchorView: NSView?
     private var currentID: String?
     private var presentationRevision: UInt64 = 0
+    private var visibilityRevision: UInt64 = 0
+    private var movementSuppressedIDs: Set<String> = []
     private(set) var isPresentationEnabled = true
 
     var currentPresentationRevision: UInt64 { presentationRevision }
@@ -32,7 +36,39 @@ final class AppTooltipPanelController {
         }
         isPresentationEnabled = isEnabled
         presentationRevision &+= 1
-        if !isEnabled { dismissAll() }
+        if isEnabled {
+            movementSuppressedIDs.removeAll()
+        } else {
+            dismissAll()
+        }
+    }
+
+    /// Ends the current page's transient hover context without disabling
+    /// tooltips for the destination page. The revision rejects any queued show
+    /// request emitted by a persistent but now-hidden page.
+    func invalidatePresentationContext() {
+        presentationRevision &+= 1
+        movementSuppressedIDs.removeAll()
+        dismissAll()
+    }
+
+    /// A detached tooltip window cannot remain spatially correct while its
+    /// SwiftUI content is scrolling or otherwise moving. Invalidate the hover
+    /// revision, fade the current panel, and suppress that same hover identity
+    /// until the pointer actually leaves its anchor.
+    func handleViewportMovement() {
+        presentationRevision &+= 1
+        if let currentID {
+            movementSuppressedIDs.insert(currentID)
+        }
+        dismissAll()
+    }
+
+    func handleAnchorMovement(id: String) {
+        presentationRevision &+= 1
+        movementSuppressedIDs.insert(id)
+        guard currentID == id else { return }
+        dismissAll()
     }
 
     func show(id: String, text: String, anchorView: NSView) {
@@ -55,12 +91,15 @@ final class AppTooltipPanelController {
             !text.isEmpty,
             let window = anchorView.window
         else {
-            hide(id: id)
+            if currentID == id { dismissAll() }
             return
         }
+        guard !movementSuppressedIDs.contains(id) else { return }
 
+        let previousID = currentID
         currentID = id
         self.anchorView = anchorView
+        visibilityRevision &+= 1
         let content = AppTooltipPanelContent(
             text: text,
             iconSize: max(1, anchorView.bounds.height),
@@ -83,11 +122,15 @@ final class AppTooltipPanelController {
         attach(panel, to: window)
         updatePosition(id: id)
 
-        guard !panel.isVisible else { return }
-        panel.alphaValue = 0
-        panel.orderFront(nil)
+        if !panel.isVisible || previousID != id {
+            panel.alphaValue = 0
+        }
+        if !panel.isVisible {
+            panel.orderFront(nil)
+        }
+        guard panel.alphaValue < 1 else { return }
         NSAnimationContext.runAnimationGroup { context in
-            context.duration = 0.10
+            context.duration = Self.fadeInDuration
             context.timingFunction = CAMediaTimingFunction(name: .easeOut)
             panel.animator().alphaValue = 1
         }
@@ -120,19 +163,43 @@ final class AppTooltipPanelController {
     }
 
     func hide(id: String) {
+        movementSuppressedIDs.remove(id)
         guard currentID == id else { return }
         dismissAll()
     }
 
-    func dismissAll() {
+    func dismissAll(animated: Bool = true) {
         currentID = nil
         anchorView = nil
-        if let panel {
-            parentWindow?.removeChildWindow(panel)
-            panel.orderOut(nil)
-            panel.alphaValue = 1
+        visibilityRevision &+= 1
+        let expectedVisibilityRevision = visibilityRevision
+
+        guard let panel, panel.isVisible else {
+            detachPanelIfNeeded(panel)
+            return
         }
-        parentWindow = nil
+
+        guard animated else {
+            finishDismissal(panel: panel, expectedRevision: expectedVisibilityRevision)
+            return
+        }
+
+        NSAnimationContext.runAnimationGroup(
+            { context in
+                context.duration = Self.fadeOutDuration
+                context.timingFunction = CAMediaTimingFunction(name: .easeOut)
+                panel.animator().alphaValue = 0
+            },
+            completionHandler: { [weak self, weak panel] in
+                MainActor.assumeIsolated {
+                    guard let self, let panel else { return }
+                    self.finishDismissal(
+                        panel: panel,
+                        expectedRevision: expectedVisibilityRevision
+                    )
+                }
+            }
+        )
     }
 
     private func tooltipPanel(
@@ -163,6 +230,22 @@ final class AppTooltipPanelController {
         parentWindow?.removeChildWindow(panel)
         parentWindow = window
         window.addChildWindow(panel, ordered: .above)
+    }
+
+    private func finishDismissal(panel: NSPanel, expectedRevision: UInt64) {
+        guard visibilityRevision == expectedRevision, currentID == nil else { return }
+        detachPanelIfNeeded(panel)
+    }
+
+    private func detachPanelIfNeeded(_ panel: NSPanel?) {
+        guard let panel else {
+            parentWindow = nil
+            return
+        }
+        parentWindow?.removeChildWindow(panel)
+        panel.orderOut(nil)
+        panel.alphaValue = 1
+        parentWindow = nil
     }
 }
 

@@ -453,13 +453,12 @@ private struct GroupResizeControls: View {
                     width: value.translation.width / scale,
                     height: value.translation.height / scale
                 )
-                if let resolved = store.resolvedGroupResize(
+                resizePreview = store.interactiveGroupResizePreview(
                     id: group.id,
                     proposedFrame: handle.resizedFrame(from: snapshot.frame, translation: translation),
-                    originalFrame: snapshot.frame
-                ) {
-                    resizePreview = resolved
-                }
+                    originalFrame: snapshot.frame,
+                    originalAppPositions: snapshot.appPositions
+                )
             }
             .onEnded { _ in
                 let snapshot = resizeSnapshot
@@ -470,18 +469,25 @@ private struct GroupResizeControls: View {
                 } else {
                     NSCursor.arrow.set()
                 }
-                guard let snapshot,
-                    let committedPreview = resizePreview
-                else { return }
+                guard let snapshot, let requestedPreview = resizePreview else { return }
+                // The gesture preview is intentionally unconcerned with other
+                // groups. Resolve collision and repair exactly once at release.
+                let committedPreview = store.resolvedGroupResize(
+                    id: group.id,
+                    proposedFrame: requestedPreview.frame,
+                    originalFrame: snapshot.frame
+                )
                 var transaction = Transaction()
                 transaction.disablesAnimations = true
                 withTransaction(transaction) {
-                    store.commitGroupResize(
-                        id: group.id,
-                        originalFrame: snapshot.frame,
-                        originalAppPositions: snapshot.appPositions,
-                        preview: committedPreview
-                    )
+                    if let committedPreview {
+                        store.commitGroupResize(
+                            id: group.id,
+                            originalFrame: snapshot.frame,
+                            originalAppPositions: snapshot.appPositions,
+                            preview: committedPreview
+                        )
+                    }
                     resizePreview = nil
                 }
             }

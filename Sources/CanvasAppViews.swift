@@ -3,6 +3,7 @@ import SwiftUI
 
 struct SpaceAppIcon: View {
     @EnvironmentObject private var store: LauncherStore
+    @EnvironmentObject private var removalCoordinator: ApplicationRemovalCoordinator
     let app: AppInfo
     let offset: CGSize
     let scale: CGFloat
@@ -18,7 +19,7 @@ struct SpaceAppIcon: View {
 
     var body: some View {
         Button {
-            if !isDragging { store.launch(app) }
+            if !isDragging, !removalCoordinator.isManagementPresented { store.launch(app) }
         } label: {
             AppIconContent(
                 app: app,
@@ -60,11 +61,14 @@ struct SpaceAppIcon: View {
             Divider()
             Button("在访达中显示", systemImage: "folder") { store.revealInFinder(app) }
             Button("打开应用", systemImage: "arrow.up.forward.app") { store.launch(app) }
+            Divider()
+            ApplicationRemovalMenuItem(app: app)
         }
         .accessibilityLabel(store.displayName(for: app))
         .accessibilityValue(store.instanceLabel(for: app) ?? app.purpose)
         .accessibilityHint("单击打开；操作菜单可以移动分组、隐藏或在访达中显示")
         .accessibilityIdentifier(ZizaiAccessibilityID.appTile(app.id))
+        .applicationManagement(for: app)
         .accessibilityAction(named: Text("移到上一个分组")) {
             store.moveAppToAdjacentGroup(app, offset: -1)
         }
@@ -157,6 +161,7 @@ struct CanvasBottomControls: View {
     @EnvironmentObject private var store: LauncherStore
     @Environment(\.accessibilityReduceMotion) private var systemReduceMotion
     let viewport: CGSize
+    let displayedScale: CGFloat
 
     private var reduceMotion: Bool {
         ZizaiAccessibilityPreferences.reduceMotion(systemValue: systemReduceMotion)
@@ -212,12 +217,12 @@ struct CanvasBottomControls: View {
                     .accessibilityLabel("缩小")
                     .accessibilityIdentifier(ZizaiAccessibilityID.canvasZoomOut)
 
-                    Text("\(Int(store.canvasScale * 100))%")
+                    Text("\(Int(displayedScale * 100))%")
                         .font(ZizaiTypography.captionMedium)
                         .monospacedDigit()
                         .frame(width: 44)
                         .accessibilityIdentifier(ZizaiAccessibilityID.canvasZoomValue)
-                        .accessibilityValue("\(Int(store.canvasScale * 100))")
+                        .accessibilityValue("\(Int(displayedScale * 100))")
 
                     Button {
                         zizaiAnimate(ZizaiMotion.spatial, reduceMotion: reduceMotion) {

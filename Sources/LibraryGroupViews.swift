@@ -288,10 +288,14 @@ struct GroupInsertionTarget: View {
                     .padding(.horizontal, 10)
                     .frame(height: ZizaiControlMetrics.compactRowHeight)
                     .background(.regularMaterial, in: Capsule())
+                    .transition(.opacity.combined(with: .scale(scale: 0.94)))
             }
         }
         .frame(maxWidth: .infinity)
-        .frame(height: isActive ? 112 : 10)
+        // A drop marker may paint beyond this fixed slot, but it never changes
+        // LazyVStack geometry. The previous 10 -> 112 point height transition
+        // moved every measured card while hit testing still used frozen frames.
+        .frame(height: 10)
         .contentShape(Rectangle())
         .zizaiAnimation(ZizaiMotion.control, value: isActive)
         // This is a pointer-only drag target. Exposing every dormant slot

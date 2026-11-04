@@ -338,6 +338,57 @@ final class InteractionGeometryTests: XCTestCase {
         )
     }
 
+    func testViewportInteractionSessionKeepsAnchorStableAndCompositorEquivalent() {
+        let viewport = CGSize(width: 1200, height: 760)
+        let anchor = CGPoint(x: 310, y: 245)
+        let baseline = CanvasViewportTransform(
+            scale: 0.72,
+            offset: CGSize(width: 125, height: -84)
+        )
+        var session = CanvasViewportInteractionSession(baseline: baseline)
+        let anchoredWorldPoint = worldPoint(
+            below: anchor,
+            offset: baseline.offset,
+            scale: baseline.scale,
+            viewport: viewport
+        )
+
+        session.translate(by: CGSize(width: 38, height: -17))
+        let worldBeforeZoom = worldPoint(
+            below: anchor,
+            offset: session.presentation.offset,
+            scale: session.presentation.scale,
+            viewport: viewport
+        )
+        session.zoom(by: 0.19, around: anchor, in: viewport)
+        let worldAfterZoom = worldPoint(
+            below: anchor,
+            offset: session.presentation.offset,
+            scale: session.presentation.scale,
+            viewport: viewport
+        )
+
+        XCTAssertEqual(worldAfterZoom.x, worldBeforeZoom.x, accuracy: 0.000_001)
+        XCTAssertEqual(worldAfterZoom.y, worldBeforeZoom.y, accuracy: 0.000_001)
+        XCTAssertNotEqual(worldAfterZoom, anchoredWorldPoint)
+
+        let sampleWorld = CGPoint(x: -205, y: 144)
+        let baselineVector = CGPoint(
+            x: baseline.offset.width + sampleWorld.x * baseline.scale,
+            y: baseline.offset.height + sampleWorld.y * baseline.scale
+        )
+        let compositedVector = CGPoint(
+            x: baselineVector.x * session.compositorScale + session.compositorOffset.width,
+            y: baselineVector.y * session.compositorScale + session.compositorOffset.height
+        )
+        let directVector = CGPoint(
+            x: session.presentation.offset.width + sampleWorld.x * session.presentation.scale,
+            y: session.presentation.offset.height + sampleWorld.y * session.presentation.scale
+        )
+        XCTAssertEqual(compositedVector.x, directVector.x, accuracy: 0.000_001)
+        XCTAssertEqual(compositedVector.y, directVector.y, accuracy: 0.000_001)
+    }
+
     private func worldPoint(
         below anchor: CGPoint,
         offset: CGSize,

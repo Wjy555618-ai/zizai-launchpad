@@ -4,14 +4,15 @@ import SwiftUI
 struct SpaceCanvasView: View {
     @EnvironmentObject private var store: LauncherStore
     @Environment(\.accessibilityReduceMotion) private var systemReduceMotion
+    @Environment(\.primaryLayerIsActive) private var primaryLayerIsActive
     let shouldCaptureInput: () -> Bool
     @Binding var aliasTarget: AppInfo?
     @Binding var aliasDraft: String
     let onEditGroup: (UserGroup) -> Void
     let onDeleteGroup: (UserGroup) -> Void
 
-    @State private var panStart: CGSize?
-    @State private var panPreview: CGSize = .zero
+    @State private var viewportSession: CanvasViewportInteractionSession?
+    @State private var panOrigin: CanvasViewportTransform?
 
     private var reduceMotion: Bool {
         ZizaiAccessibilityPreferences.reduceMotion(systemValue: systemReduceMotion)
@@ -20,12 +21,14 @@ struct SpaceCanvasView: View {
     var body: some View {
         GeometryReader { proxy in
             if proxy.size.width >= 320, proxy.size.height >= 240 {
-                let offset = store.canvasOffset
-                let scale = store.canvasScale
-                let visualOffset = CGSize(
-                    width: offset.width + panPreview.width,
-                    height: offset.height + panPreview.height
+                let baseline = CanvasViewportTransform(
+                    scale: store.canvasScale,
+                    offset: store.canvasOffset
                 )
+                let activeSession = viewportSession
+                let presentation = activeSession?.presentation ?? baseline
+                let compositorScale = activeSession?.compositorScale ?? 1
+                let compositorOffset = activeSession?.compositorOffset ?? .zero
                 let viewport = CGSize(
                     width: max(1, proxy.size.width),
                     height: max(1, proxy.size.height)
@@ -39,23 +42,47 @@ struct SpaceCanvasView: View {
                         .accessibilityIdentifier(ZizaiAccessibilityID.spaceScreen)
                         .allowsHitTesting(false)
 
-                    InfiniteGrid(offset: visualOffset, scale: scale)
-                        .contentShape(Rectangle())
-                        .onTapGesture {
-                            store.selectedGroupID = nil
-                            NSApp.keyWindow?.makeFirstResponder(nil)
-                        }
-                        .gesture(panGesture(current: offset))
+                    ZStack {
+                        InfiniteGrid(offset: baseline.offset, scale: baseline.scale)
+
+                        Color.clear
+                            .contentShape(Rectangle())
+                            .onTapGesture {
+                                store.selectedGroupID = nil
+                                NSApp.keyWindow?.makeFirstResponder(nil)
+                            }
+                            .gesture(panGesture(baseline: baseline))
+
+                        CanvasWorldLayer(
+                            offset: baseline.offset,
+                            scale: baseline.scale,
+                            viewport: viewport,
+                            aliasTarget: $aliasTarget,
+                            aliasDraft: $aliasDraft,
+                            onEditGroup: onEditGroup,
+                            onDeleteGroup: onDeleteGroup
+                        )
+                    }
+                    // The complete world is rendered at the immutable baseline.
+                    // Pointer-frequency pan and zoom update only this compositor
+                    // transform; Store publication and persistence happen once.
+                    .scaleEffect(compositorScale, anchor: .center)
+                    .offset(x: compositorOffset.width, y: compositorOffset.height)
 
                     CanvasInputCapture(
                         shouldCapture: shouldCaptureInput,
                         onScroll: { delta in
-                            previewCanvasPan(by: delta)
+                            updateViewportSession(from: baseline) { session in
+                                session.translate(by: delta)
+                            }
                         },
-                        onScrollEnd: commitCanvasPanPreview,
+                        onScrollEnd: commitViewportSession,
                         onZoom: { delta, anchor in
-                            store.adjustCanvasZoom(by: delta, around: anchor, in: viewport)
+                            updateViewportSession(from: baseline) { session in
+                                session.zoom(by: delta, around: anchor, in: viewport)
+                            }
                         },
+                        onZoomEnd: commitViewportSession,
                         onPointerAnchor: { anchor in
                             store.updateCanvasZoomAnchor(anchor, in: viewport)
                         },
@@ -64,89 +91,72 @@ struct SpaceCanvasView: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .allowsHitTesting(false)
 
-                    CanvasWorldLayer(
-                        offset: offset,
-                        scale: scale,
+                    CanvasBottomControls(
                         viewport: viewport,
-                        aliasTarget: $aliasTarget,
-                        aliasDraft: $aliasDraft,
-                        onEditGroup: onEditGroup,
-                        onDeleteGroup: onDeleteGroup
+                        displayedScale: presentation.scale
                     )
-                    // Pointer movement now changes one compositor transform.
-                    // The persistent store, every icon and every glass card
-                    // stay untouched until the interaction ends.
-                    .offset(x: panPreview.width, y: panPreview.height)
-
-                    CanvasBottomControls(viewport: viewport)
-                        .zIndex(100)
+                    .zIndex(100)
                 }
                 .clipped()
                 .zizaiAnimation(ZizaiMotion.control, value: store.dropTargetGroupID)
                 .onAppear { store.normalizeCanvasViewport(viewport) }
                 .zizaiOnChange(of: viewport) { size in store.normalizeCanvasViewport(size) }
+                .zizaiOnChange(of: primaryLayerIsActive) { isActive in
+                    if !isActive { commitViewportSession() }
+                }
+                .onDisappear { commitViewportSession() }
             } else {
                 Color.clear
             }
         }
     }
 
-    private func panGesture(current: CGSize) -> some Gesture {
-        DragGesture(minimumDistance: 2)
+    private func panGesture(baseline: CanvasViewportTransform) -> some Gesture {
+        DragGesture(minimumDistance: 2, coordinateSpace: .global)
             .onChanged { value in
-                if panStart == nil { panStart = current }
-                setPanPreview(value.translation)
+                if panOrigin == nil {
+                    if viewportSession == nil {
+                        viewportSession = CanvasViewportInteractionSession(baseline: baseline)
+                    }
+                    panOrigin = viewportSession?.presentation ?? baseline
+                }
+                guard let origin = panOrigin else { return }
+                updateViewportSession(from: baseline) { session in
+                    session.setTranslation(value.translation, from: origin)
+                }
             }
-            .onEnded { value in
-                guard let start = panStart else { return }
-                let committed = CGSize(
-                    width: start.width + value.translation.width,
-                    height: start.height + value.translation.height
-                )
-                panStart = nil
-                commitCanvasPan(to: committed)
+            .onEnded { _ in
+                panOrigin = nil
+                commitViewportSession()
             }
     }
 
-    private func previewCanvasPan(by delta: CGSize) {
-        setPanPreview(
-            CGSize(
-                width: panPreview.width + delta.width,
-                height: panPreview.height + delta.height
-            )
-        )
-    }
-
-    private func setPanPreview(_ preview: CGSize) {
-        guard
-            abs(preview.width - panPreview.width) > 0.01
-                || abs(preview.height - panPreview.height) > 0.01
-        else { return }
+    private func updateViewportSession(
+        from baseline: CanvasViewportTransform,
+        _ update: (inout CanvasViewportInteractionSession) -> Void
+    ) {
+        var session = viewportSession ?? CanvasViewportInteractionSession(baseline: baseline)
+        update(&session)
+        guard session != viewportSession else { return }
         var transaction = Transaction()
         transaction.disablesAnimations = true
         withTransaction(transaction) {
-            panPreview = preview
+            viewportSession = session
         }
     }
 
-    private func commitCanvasPanPreview() {
-        guard panStart == nil,
-            abs(panPreview.width) > 0.01 || abs(panPreview.height) > 0.01
-        else { return }
-        commitCanvasPan(
-            to: CGSize(
-                width: store.canvasOffset.width + panPreview.width,
-                height: store.canvasOffset.height + panPreview.height
-            )
-        )
-    }
-
-    private func commitCanvasPan(to offset: CGSize) {
+    private func commitViewportSession() {
+        guard let session = viewportSession else { return }
         var transaction = Transaction()
         transaction.disablesAnimations = true
         withTransaction(transaction) {
-            panPreview = .zero
-            store.updateCanvas(offset: offset, persist: true)
+            store.updateCanvas(
+                offset: session.presentation.offset,
+                scale: session.presentation.scale,
+                persist: true
+            )
+            viewportSession = nil
+            panOrigin = nil
         }
     }
 

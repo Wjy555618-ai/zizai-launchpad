@@ -124,6 +124,134 @@ final class ApplicationFolderAccessTests: XCTestCase {
         XCTAssertTrue(scannedRoots.value.isEmpty)
     }
 
+    func testRemovalAuthorizationIsSeparateScopedAndRevocable() throws {
+        let fixture = try TemporaryFolderFixture(prefix: "zizai-removal-authorization")
+        defer { fixture.remove() }
+        let scanFolder = fixture.root.appendingPathComponent("UserApplications", isDirectory: true)
+        let managedFolder = fixture.root.appendingPathComponent("Applications", isDirectory: true)
+        let applicationURL = managedFolder.appendingPathComponent("Example.app", isDirectory: true)
+        try FileManager.default.createDirectory(at: scanFolder, withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(at: applicationURL, withIntermediateDirectories: true)
+
+        let manager = ApplicationFolderAccess(
+            storageDirectory: fixture.root,
+            authorizationService: TestApplicationFolderAuthorizationService()
+        ) { _ in [] }
+
+        XCTAssertTrue(manager.authorize(folder: scanFolder))
+        XCTAssertTrue(manager.authorizeRemoval(folder: managedFolder, containing: applicationURL))
+        XCTAssertTrue(manager.hasStoredAuthorization)
+        XCTAssertTrue(manager.hasStoredRemovalAuthorization)
+        XCTAssertTrue(manager.hasRemovalAuthorization(for: applicationURL))
+        XCTAssertEqual(manager.removalAuthorizationPath, managedFolder.standardizedFileURL.path)
+
+        let activeFolder = try XCTUnwrap(manager.beginRemovalAccess(for: applicationURL))
+        XCTAssertEqual(activeFolder.standardizedFileURL.path, managedFolder.standardizedFileURL.path)
+        manager.endRemovalAccess(activeFolder)
+
+        manager.revokeRemovalAuthorization()
+        XCTAssertFalse(manager.hasStoredRemovalAuthorization)
+        XCTAssertFalse(manager.hasRemovalAuthorization(for: applicationURL))
+        XCTAssertTrue(manager.hasStoredAuthorization)
+        XCTAssertEqual(manager.authorizedFolderPath, scanFolder.standardizedFileURL.path)
+    }
+
+    func testRemovalAuthorizationRejectsUnrelatedFolder() throws {
+        let fixture = try TemporaryFolderFixture(prefix: "zizai-removal-scope")
+        defer { fixture.remove() }
+        let selectedFolder = fixture.root.appendingPathComponent("Selected", isDirectory: true)
+        let otherApplication = fixture.root
+            .appendingPathComponent("Other", isDirectory: true)
+            .appendingPathComponent("Example.app", isDirectory: true)
+        try FileManager.default.createDirectory(at: selectedFolder, withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(at: otherApplication, withIntermediateDirectories: true)
+
+        let manager = ApplicationFolderAccess(
+            storageDirectory: fixture.root,
+            authorizationService: TestApplicationFolderAuthorizationService()
+        ) { _ in [] }
+
+        XCTAssertFalse(manager.authorizeRemoval(folder: selectedFolder, containing: otherApplication))
+        XCTAssertFalse(manager.hasStoredRemovalAuthorization)
+        XCTAssertTrue(manager.removalErrorMessage?.contains("但需要授权") == true)
+    }
+
+    func testRemovalAuthorizationRejectsBroaderAncestorFolder() throws {
+        let fixture = try TemporaryFolderFixture(prefix: "zizai-removal-least-privilege")
+        defer { fixture.remove() }
+        let directFolder = fixture.root.appendingPathComponent("Applications", isDirectory: true)
+        let applicationURL = directFolder.appendingPathComponent("Example.app", isDirectory: true)
+        try FileManager.default.createDirectory(at: applicationURL, withIntermediateDirectories: true)
+
+        let manager = ApplicationFolderAccess(
+            storageDirectory: fixture.root,
+            authorizationService: TestApplicationFolderAuthorizationService()
+        ) { _ in [] }
+
+        XCTAssertFalse(manager.authorizeRemoval(folder: fixture.root, containing: applicationURL))
+        XCTAssertFalse(manager.hasStoredRemovalAuthorization)
+        XCTAssertTrue(manager.removalErrorMessage?.contains("但需要授权") == true)
+    }
+
+    func testSystemApplicationsGrantIsReusedAcrossAppsAndRestart() throws {
+        let fixture = try TemporaryFolderFixture(prefix: "zizai-removal-shared-scope")
+        defer { fixture.remove() }
+        let service = TestApplicationFolderAuthorizationService()
+        let applications = URL(fileURLWithPath: "/Applications", isDirectory: true)
+        let first = applications.appendingPathComponent(
+            "Suite/First.app",
+            isDirectory: true
+        )
+        let second = applications.appendingPathComponent("Second.app", isDirectory: true)
+        let manager = ApplicationFolderAccess(
+            storageDirectory: fixture.root,
+            authorizationService: service
+        ) { _ in [] }
+
+        XCTAssertEqual(
+            ApplicationRemovalAuthorizationScope.folder(containing: first).path,
+            applications.path
+        )
+        XCTAssertTrue(manager.authorizeRemoval(folder: applications, containing: first))
+        XCTAssertTrue(manager.hasRemovalAuthorization(for: first))
+        XCTAssertTrue(manager.hasRemovalAuthorization(for: second))
+
+        let restored = ApplicationFolderAccess(
+            storageDirectory: fixture.root,
+            authorizationService: service
+        ) { _ in [] }
+        XCTAssertEqual(restored.removalAuthorizationPath, applications.path)
+        XCTAssertTrue(restored.hasRemovalAuthorization(for: first))
+        XCTAssertTrue(restored.hasRemovalAuthorization(for: second))
+    }
+
+    func testAuthorizationScopeUsesUserApplicationsAndExternalDirectParent() throws {
+        let home = URL(fileURLWithPath: "/Users/example", isDirectory: true)
+        let userApplication = home.appendingPathComponent(
+            "Applications/Example.app",
+            isDirectory: true
+        )
+        XCTAssertEqual(
+            ApplicationRemovalAuthorizationScope.folder(
+                containing: userApplication,
+                homeDirectory: home
+            ).path,
+            "/Users/example/Applications"
+        )
+
+        let externalApplication = URL(
+            fileURLWithPath: "/Volumes/Portable/Tools/Example.app",
+            isDirectory: true
+        )
+        XCTAssertEqual(
+            ApplicationRemovalAuthorizationScope.folder(
+                containing: externalApplication,
+                homeDirectory: home
+            ).path,
+            "/Volumes/Portable/Tools"
+        )
+    }
+
     private func standardizedPaths(_ urls: [URL]) -> [String] {
         urls.map(\.standardizedFileURL.path)
     }

@@ -11,7 +11,7 @@ The product is currently Chinese-first. Contributions that preserve the privacy,
 ## Engineering principles
 
 - No networking, analytics, advertising, or tracking SDKs.
-- App Sandbox with read-only, user-selected application folders.
+- App Sandbox with read-only scan bookmarks and a separate user-selected grant used only to move a confirmed third-party `.app` bundle to the system Trash.
 - Cancellable scanning, batched icon preparation, and serialized background persistence.
 - Atomic JSON state, verified backup recovery, and schema migration.
 - One `LauncherStore` state aggregate with separate catalog, placement, group, and canvas command boundaries; every undoable command commits a value-semantic state revision instead of retaining view closures.

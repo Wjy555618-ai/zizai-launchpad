@@ -26,7 +26,6 @@ struct ExpandableSearchControl: View {
     @FocusState.Binding var isFocused: Bool
     let onOpen: () -> Void
     let onClear: () -> Void
-    let onClose: () -> Void
     let onExit: () -> Void
     let onSubmit: () -> Void
 
@@ -133,21 +132,9 @@ struct ExpandableSearchControl: View {
                 .transition(.opacity.combined(with: .scale(scale: 0.94)))
             }
 
-            Button(action: onClose) {
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 13, weight: .semibold))
-                    .frame(width: 24, height: 24)
-                    .contentShape(Circle())
-            }
-            .buttonStyle(.plain)
-            .opacity(isExpanded ? 0.78 : 0)
-            .allowsHitTesting(isExpanded)
-            .accessibilityHidden(!isExpanded)
-            .accessibilityLabel("收起搜索")
-            .accessibilityHint("清除搜索并返回当前视图")
         }
         .padding(.leading, 12)
-        .padding(.trailing, 7)
+        .padding(.trailing, 12)
         .frame(
             width: TopChromeMetrics.searchWidth,
             height: TopChromeMetrics.controlHeight,
@@ -255,6 +242,7 @@ struct SearchResultsView: View {
 
 private struct SearchResultTile: View {
     @EnvironmentObject private var store: LauncherStore
+    @EnvironmentObject private var removalCoordinator: ApplicationRemovalCoordinator
     let app: AppInfo
     let isCurrent: Bool
     @Binding var aliasTarget: AppInfo?
@@ -266,7 +254,7 @@ private struct SearchResultTile: View {
 
     var body: some View {
         Button {
-            store.launch(app)
+            if !removalCoordinator.isManagementPresented { store.launch(app) }
         } label: {
             HStack(spacing: 14) {
                 ZStack(alignment: .topTrailing) {
@@ -290,6 +278,7 @@ private struct SearchResultTile: View {
                     }
                 }
                 .frame(width: 68, height: 68)
+                .applicationIconAnchor()
 
                 VStack(alignment: .leading, spacing: 5) {
                     Text(store.editableDisplayName(for: app))
@@ -344,6 +333,8 @@ private struct SearchResultTile: View {
             Divider()
             Button("在访达中显示", systemImage: "folder") { store.revealInFinder(app) }
             Button("打开应用", systemImage: "arrow.up.forward.app") { store.launch(app) }
+            Divider()
+            ApplicationRemovalMenuItem(app: app)
         }
         .accessibilityLabel(
             [store.editableDisplayName(for: app), instanceLabel]
@@ -352,5 +343,7 @@ private struct SearchResultTile: View {
         )
         .accessibilityValue(isCurrent ? "当前搜索结果" : "搜索匹配")
         .accessibilityHint("单击打开；按回车依次定位搜索结果")
+        .accessibilityIdentifier(ZizaiAccessibilityID.appTile(app.id))
+        .applicationManagement(for: app)
     }
 }

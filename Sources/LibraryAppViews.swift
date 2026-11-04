@@ -3,6 +3,7 @@ import SwiftUI
 
 struct LibraryAppTile: View {
     @EnvironmentObject private var store: LauncherStore
+    @EnvironmentObject private var removalCoordinator: ApplicationRemovalCoordinator
     let app: AppInfo
     let groupID: String
     let index: Int
@@ -14,7 +15,7 @@ struct LibraryAppTile: View {
 
     var body: some View {
         Button {
-            if !suppressLaunch { store.launch(app) }
+            if !suppressLaunch, !removalCoordinator.isManagementPresented { store.launch(app) }
         } label: {
             AppIconContent(app: app, size: 64)
                 .accessibilityHidden(true)
@@ -36,6 +37,7 @@ struct LibraryAppTile: View {
         )
         .accessibilityHint("单击打开；拖到应用之间可以插入换序，拖到其他分组可以换组")
         .accessibilityIdentifier(ZizaiAccessibilityID.appTile(app.id))
+        .applicationManagement(for: app)
     }
 
     private var appDragGesture: some Gesture {
@@ -82,6 +84,8 @@ struct LibraryAppTile: View {
         Divider()
         Button("在访达中显示", systemImage: "folder") { store.revealInFinder(app) }
         Button("打开应用", systemImage: "arrow.up.forward.app") { store.launch(app) }
+        Divider()
+        ApplicationRemovalMenuItem(app: app)
     }
 }
 

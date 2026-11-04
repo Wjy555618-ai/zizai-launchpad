@@ -12,6 +12,7 @@ enum ZizaiAccessibilityID {
     static let appCatalogOptionsButton = "app-catalog.options"
     static let helpButton = "help.open"
     static let helpHeading = "help.heading"
+    static let privacyPolicyDone = "privacy-policy.done"
     static let groupEditorHeading = "group-editor.heading"
     static let groupEditorNameField = "group-editor.name"
     static let groupsScreen = "screen.groups"
@@ -22,6 +23,7 @@ enum ZizaiAccessibilityID {
     static let canvasZoomIn = "canvas.zoom-in"
     static let canvasFit = "canvas.fit"
     static let toastUndo = "toast.undo"
+    static let applicationManagementDone = "application-management.done"
 
     static func layoutMode(_ mode: LayoutMode) -> String {
         "navigation.\(modeIdentifier(mode))"
@@ -41,6 +43,10 @@ enum ZizaiAccessibilityID {
 
     static func appTile(_ appID: String) -> String {
         "app.tile.\(appID)"
+    }
+
+    static func applicationRemovalButton(_ appID: String) -> String {
+        "application-removal.\(appID)"
     }
 
     static func appCatalogFilter(_ filter: AllAppsFilter) -> String {
@@ -75,6 +81,8 @@ struct ZizaiLaunchConfiguration {
     static let uiTestingEnvironmentKey = "ZIZAI_UI_TESTING"
     static let uiTestSessionEnvironmentKey = "ZIZAI_UI_TEST_SESSION"
     static let uiTestResetEnvironmentKey = "ZIZAI_UI_TEST_RESET"
+    static let uiTestManagementTimeoutEnvironmentKey = "ZIZAI_UI_TEST_MANAGEMENT_TIMEOUT"
+    static let uiTestApplicationCountEnvironmentKey = "ZIZAI_UI_TEST_APPLICATION_COUNT"
 
     private static let xctestBundlePathEnvironmentKey = "XCTestBundlePath"
     private static let xctestInjectionTargetEnvironmentKey = "XCInjectBundleInto"
@@ -110,10 +118,12 @@ struct ZizaiLaunchConfiguration {
                 directory,
                 reset: environment[uiTestResetEnvironmentKey] != "0"
             )
+            let requestedApplicationCount = environment[uiTestApplicationCountEnvironmentKey]
+                .flatMap(Int.init)
             return ZizaiLaunchConfiguration(
                 mode: .uiTesting,
                 stateDirectory: directory,
-                applications: fixtureApplications
+                applications: fixtureApplications(totalCount: requestedApplicationCount)
             )
         case .production:
             return ZizaiLaunchConfiguration(
@@ -215,7 +225,7 @@ struct ZizaiLaunchConfiguration {
                 bundleIdentifier: "com.figma.Desktop",
                 name: "Figma",
                 chineseName: "Figma",
-                path: "/Applications/Figma+EX.app",
+                path: "/Applications/ZizaiLaunchpadUITest-FigmaCopy.app",
                 purpose: "界面设计",
                 group: .aiCreative
             ),
@@ -260,6 +270,27 @@ struct ZizaiLaunchConfiguration {
                 group: .other
             ),
         ]
+    }
+
+    /// Production-density UI tests opt into a larger deterministic catalog.
+    /// The default fixture remains intentionally small for unrelated journeys,
+    /// while modal and management tests can reproduce the real cost of dozens
+    /// of simultaneously visible application tiles.
+    static func fixtureApplications(totalCount requestedCount: Int?) -> [AppInfo] {
+        let base = fixtureApplications
+        guard let requestedCount, requestedCount > base.count else { return base }
+
+        return base
+            + (base.count..<requestedCount).map { index in
+                fixture(
+                    bundleIdentifier: "local.wangzhentao.ZizaiLaunchpadUITest.\(index)",
+                    name: "Test Application \(index + 1)",
+                    chineseName: "测试应用 \(index + 1)",
+                    path: "/Applications/ZizaiLaunchpadUITest-\(index).app",
+                    purpose: "生产密度交互验证",
+                    group: index.isMultiple(of: 2) ? .productivity : .aiCreative
+                )
+            }
     }
 
     private static func fixture(

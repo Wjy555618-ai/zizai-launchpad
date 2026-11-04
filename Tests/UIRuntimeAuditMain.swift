@@ -28,3 +28,22 @@ enum UIRuntimeAuditMain {
         exit(2)
     }
 }
+
+/// Runtime audits never mutate the operator's applications. They still build
+/// the same dependency graph as production so missing coordinator injection
+/// fails during audit construction instead of being hidden by test-only view
+/// branches.
+@MainActor
+final class AuditApplicationRemovalAuthorizer: ApplicationRemovalAuthorizing {
+    var removalErrorMessage: String? { nil }
+
+    func hasRemovalAuthorization(for _: URL) -> Bool { false }
+
+    func authorizeRemoval(folder _: URL, containing _: URL) -> Bool { false }
+
+    func beginRemovalAccess(for _: URL) -> URL? { nil }
+
+    func endRemovalAccess(_: URL) {}
+
+    func reportRemovalSelectionError(_: Error) {}
+}

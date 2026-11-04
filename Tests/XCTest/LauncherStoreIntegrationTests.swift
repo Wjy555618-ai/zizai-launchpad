@@ -207,6 +207,56 @@ final class LauncherStoreIntegrationTests: XCTestCase {
         }
     }
 
+    func testInteractiveGroupResizePreviewIsLocalAndRejectsInvalidGeometry() {
+        withStore { store, _ in
+            let groupID = AppGroup.aiCreative.stableID
+            guard let group = store.group(withID: groupID) else {
+                return XCTFail("Missing group fixture")
+            }
+            let originalFrame = SpatialLayoutEngine.frame(for: group)
+            let originalPositions = Dictionary(
+                uniqueKeysWithValues:
+                    store.assignedApps(in: groupID, includeHidden: false).map {
+                        ($0.id, store.position(for: $0))
+                    }
+            )
+            let stateBeforePreview = store.state
+            let proposedFrame = CGRect(
+                x: originalFrame.minX,
+                y: originalFrame.minY,
+                width: originalFrame.width + 180,
+                height: originalFrame.height + 120
+            )
+
+            let preview = store.interactiveGroupResizePreview(
+                id: groupID,
+                proposedFrame: proposedFrame,
+                originalFrame: originalFrame,
+                originalAppPositions: originalPositions
+            )
+            XCTAssertEqual(preview?.frame, proposedFrame)
+            XCTAssertEqual(
+                Set(preview?.appPositions.keys.map { $0 } ?? []),
+                Set(originalPositions.keys)
+            )
+            XCTAssertEqual(store.state, stateBeforePreview)
+
+            let invalid = store.interactiveGroupResizePreview(
+                id: groupID,
+                proposedFrame: CGRect(
+                    x: originalFrame.minX,
+                    y: originalFrame.minY,
+                    width: InteractionGeometry.minimumGroupWidth - 1,
+                    height: InteractionGeometry.minimumGroupHeight - 1
+                ),
+                originalFrame: originalFrame,
+                originalAppPositions: originalPositions
+            )
+            XCTAssertNil(invalid)
+            XCTAssertEqual(store.state, stateBeforePreview)
+        }
+    }
+
     func testAccessibleGroupNudgeMovesEveryMemberAndUndoRestoresExactState() {
         withStore { store, _ in
             let groupID = AppGroup.aiCreative.stableID
@@ -431,6 +481,23 @@ final class LauncherStoreIntegrationTests: XCTestCase {
             store.flushPendingPersistence()
             let restarted = LauncherStore(stateDirectory: directory, appProvider: { applications })
             XCTAssertEqual(restarted.layoutMode, .space)
+        }
+    }
+
+    func testSuccessfulRemovalUpdatesCatalogAndSearchSelectionSynchronously() {
+        withStore { store, applications in
+            guard let removedApp = applications.first(where: { $0.name == "Figma" }) else {
+                return XCTFail("Missing removal fixture")
+            }
+            store.searchText = "figma"
+            store.currentSearchResultID = removedApp.id
+
+            store.completeSuccessfulRemoval(removedApp)
+
+            XCTAssertFalse(store.apps.contains(where: { $0.id == removedApp.id }))
+            XCTAssertFalse(store.searchResults.contains(where: { $0.id == removedApp.id }))
+            XCTAssertNotEqual(store.currentSearchResultID, removedApp.id)
+            XCTAssertNotNil(store.currentSearchResultID)
         }
     }
 

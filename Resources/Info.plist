@@ -32,6 +32,8 @@
     <string>13.0</string>
 	<key>NSHighResolutionCapable</key>
 	<true/>
+	<key>NSAppBundlesUsageDescription</key>
+	<string>在你明确确认后，自在启动台需要将选中的第三方应用移入系统废纸篓。</string>
 	<key>NSHumanReadableCopyright</key>
 	<string>Copyright © 2026 王振涛</string>
 	<key>NSPrincipalClass</key>

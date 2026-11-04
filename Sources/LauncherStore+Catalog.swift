@@ -78,6 +78,21 @@ extension LauncherStore {
         }
     }
 
+    /// The recycler has already confirmed that this exact application bundle
+    /// left its source location. Remove the corresponding catalog identity in
+    /// the same animation transaction, then rescan to confirm disk truth.
+    func completeSuccessfulRemoval(_ removedApp: AppInfo) {
+        applyScannedApps(
+            apps.filter { $0.id != removedApp.id },
+            announce: false,
+            persist: true
+        )
+        refreshSearchSelection()
+        if asyncAppProvider != nil {
+            reloadApps()
+        }
+    }
+
     private func applyScannedApps(_ scannedApps: [AppInfo], announce: Bool, persist: Bool) {
         apps = scannedApps
         bundleInstanceCounts = Dictionary(grouping: apps, by: \.bundleIdentifier)

@@ -62,6 +62,24 @@ UI_MODULE_LIMITS = {
     "LibraryGroupViews.swift": 380,
     "LibraryAppViews.swift": 220,
     "LibraryTooltipViews.swift": 200,
+    "ApplicationManagementViews.swift": 190,
+    "ApplicationManagementChrome.swift": 150,
+    "ApplicationManagementJiggle.swift": 150,
+    "ApplicationManagementLifecycle.swift": 190,
+    "ApplicationManagementMotion.swift": 140,
+    "ApplicationManagementTopChrome.swift": 140,
+}
+
+CAPABILITY_MODULE_LIMITS = {
+    "ApplicationManagementPermission.swift": 100,
+    "ApplicationFolderAccess.swift": 430,
+    "ApplicationRemoval.swift": 360,
+    "ApplicationRemovalCompletion.swift": 120,
+    "ApplicationRemovalAuthorizationPresenter.swift": 180,
+    "ApplicationRemovalAuthorizationScope.swift": 100,
+    "ApplicationRemovalCoordinator+Management.swift": 180,
+    "ApplicationRemovalServices.swift": 180,
+    "ApplicationTrashMover.swift": 140,
 }
 
 
@@ -100,6 +118,77 @@ def main() -> None:
             fail(f"{name} 未同时加入 Xcode 文件组与应用 Sources 阶段")
         if f'"$PROJECT_DIR/Sources/{name}"' not in manifest:
             fail(f"{name} 未进入完整界面审计源图")
+
+    management_views = source_text("ApplicationManagementViews.swift")
+    if "removalChromeProgress" in management_views or "DispatchQueue.main.async" in management_views:
+        fail("删除按钮不得依赖临时挂载后的异步首帧或逐卡片进度状态")
+    if "return Alert(" in management_views or "-> Alert" in management_views:
+        fail("应用移除弹窗不得恢复会触发旧式 NSAlert 桥接诊断的 Alert 返回值")
+    if "func makeAlertActions" not in management_views:
+        fail("应用移除弹窗必须由统一的现代 SwiftUI alert actions 构建")
+
+    root_views = source_text("Views.swift")
+    for alert_contract in (
+        "presenting: removalCoordinator.dialog",
+        "dialog.makeAlertActions(coordinator: removalCoordinator)",
+    ):
+        if alert_contract not in root_views:
+            fail(f"应用移除弹窗没有接入统一的现代呈现契约；缺少 {alert_contract}")
+
+    management_chrome = source_text("ApplicationManagementChrome.swift")
+    for stable_badge_contract in (
+        "private struct ApplicationRemovalBadgeModifier",
+        "content.overlayPreferenceValue(ApplicationIconAnchorPreferenceKey.self)",
+        "if let anchor, isVisible",
+        ".transition(transition)",
+        "value: isVisible",
+    ):
+        if stable_badge_contract not in management_chrome:
+            fail(f"删除按钮必须在稳定图标容器内完成插入和移除转场；缺少 {stable_badge_contract}")
+    for icon_source_name in ("AppPresentationViews.swift", "SearchViews.swift"):
+        icon_source = source_text(icon_source_name)
+        if ".applicationIconAnchor()" not in icon_source:
+            fail(f"{icon_source_name} 的真实图标没有提供统一删除按钮定位锚点")
+
+    if ".launchpadRemovalChrome(for: app)" not in management_views:
+        fail("应用卡片外层没有接入独立可点击的统一删除按钮转场")
+
+    management_tile_sources = "\n".join(
+        source_text(name)
+        for name in (
+            "ApplicationManagementMotion.swift",
+            "ApplicationManagementViews.swift",
+            "ApplicationManagementJiggle.swift",
+        )
+    )
+    for prohibited_frame_source in ("TimelineView(", ".repeatForever(", ".rotationEffect("):
+        if prohibited_frame_source in management_tile_sources:
+            fail(
+                "应用管理图标重新引入持续逐帧动画源 "
+                f"{prohibited_frame_source}，会在真实目录密度下阻塞主线程"
+            )
+
+    jiggle_source = source_text("ApplicationManagementJiggle.swift")
+    for required_compositor_contract in (
+        "CAAnimationGroup()",
+        'CAKeyframeAnimation(keyPath: "transform.rotation.z")',
+        "animation.repeatCount = .infinity",
+    ):
+        if required_compositor_contract not in jiggle_source:
+            fail(
+                "应用管理抖动必须由 Core Animation 合成层持续驱动，"
+                f"缺少 {required_compositor_contract}"
+            )
+
+    for name, limit in CAPABILITY_MODULE_LIMITS.items():
+        content = source_text(name)
+        line_count = len(content.splitlines())
+        if line_count > limit:
+            fail(f"{name} 为 {line_count} 行，超过能力模块职责边界 {limit} 行")
+        if project.count(f"/* {name}") < 2:
+            fail(f"{name} 未同时加入 Xcode 文件组与应用 Sources 阶段")
+        if f'"$PROJECT_DIR/Sources/{name}"' not in manifest:
+            fail(f"{name} 未进入完整产品审计源图")
 
     for pure_module in (
         "LauncherStateHistory.swift",

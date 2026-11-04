@@ -27,6 +27,7 @@ struct RootView: View {
     private var parkedLayerOpacity: Double { isPrewarmingContent ? 0.001 : 0 }
 
     @EnvironmentObject private var store: LauncherStore
+    @EnvironmentObject private var removalCoordinator: ApplicationRemovalCoordinator
     @Environment(\.accessibilityReduceMotion) private var systemReduceMotion
     @Environment(\.colorScheme) private var colorScheme
     let layoutModeController: LayoutModeController
@@ -91,7 +92,12 @@ struct RootView: View {
                 .ignoresSafeArea(edges: .top)
                 .zIndex(80)
 
-            if isSearchPresented {
+            // While the field is empty, clicking the content background is a
+            // convenient way to close the expanded search control. Once a
+            // query presents results, those results own the content surface;
+            // a full-window dismissal layer here would intercept every click
+            // before it reaches a result tile.
+            if isSearchPresented && !store.isSearching {
                 Color.clear
                     .contentShape(Rectangle())
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -132,6 +138,10 @@ struct RootView: View {
                     .accessibilityHidden(true)
             }
         }
+        .applicationManagementLifecycle(
+            layoutModeController: layoutModeController,
+            isTooltipEligible: !isSearchPresented
+        )
         .zizaiAnimation(ZizaiMotion.feedback, value: store.toast?.id)
         .zizaiAnimation(ZizaiMotion.feedback, value: store.errorMessage)
         .sheet(item: $aliasTarget) { app in
@@ -178,6 +188,20 @@ struct RootView: View {
         ) {
             groupPendingDeletion = nil
         }
+        .alert(
+            removalCoordinator.dialog?.title ?? "",
+            isPresented: Binding(
+                get: { removalCoordinator.dialog != nil },
+                set: { isPresented in
+                    if !isPresented { removalCoordinator.dismissDialog() }
+                }
+            ),
+            presenting: removalCoordinator.dialog
+        ) { dialog in
+            dialog.makeAlertActions(coordinator: removalCoordinator)
+        } message: { dialog in
+            Text(dialog.message)
+        }
         .onAppear {
             showWelcome = !store.state.hasSeenWelcome
             clearSearchFocus()
@@ -209,6 +233,13 @@ struct RootView: View {
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.willTerminateNotification)) { _ in
             store.flushPendingPersistence()
         }
+        .onExitCommand {
+            if removalCoordinator.isManaging {
+                removalCoordinator.endManagement()
+            } else if isSearchPresented {
+                handleSearchExit()
+            }
+        }
         .frame(minWidth: 1_040, minHeight: 680)
     }
 
@@ -229,49 +260,28 @@ struct RootView: View {
 
                 Spacer(minLength: 320)
 
-                HStack(spacing: TopChromeMetrics.itemSpacing) {
-                    ExpandableSearchControl(
-                        text: $store.searchText,
-                        isExpanded: isSearchPresented,
-                        isFocused: $searchFocused,
-                        onOpen: focusSearch,
-                        onClear: clearSearchKeepingFocus,
-                        onClose: resetSearch,
-                        onExit: handleSearchExit,
-                        onSubmit: store.advanceSearchResult
-                    )
-                    .layoutPriority(1)
-
-                    Button(action: presentNewGroup) {
-                        ZizaiTopChromeActionSymbol(systemName: "plus")
-                    }
-                    .buttonStyle(.plain)
-                    .zizaiGlassCapsule(interactive: true)
-                    .accessibilityLabel("新建分组")
-                    .accessibilityHint("创建一个可以改名和调整大小的分组")
-                    .accessibilityIdentifier(ZizaiAccessibilityID.newGroupButton)
-
-                    AppCatalogOptionsHost(
-                        selection: $allAppsFilter,
-                        isPresented: $isAllAppsOptionsPresented,
-                        onSelectFilter: { filter in
-                            allAppsFilter = filter
-                            activateLayoutMode(.allApps)
-                        }
-                    )
-
-                    Button {
+                ApplicationManagementTopActions(
+                    searchText: $store.searchText,
+                    isSearchPresented: isSearchPresented,
+                    searchFocused: $searchFocused,
+                    allAppsFilter: $allAppsFilter,
+                    isAllAppsOptionsPresented: $isAllAppsOptionsPresented,
+                    reduceMotion: reduceMotion,
+                    onOpenSearch: focusSearch,
+                    onClearSearch: clearSearchKeepingFocus,
+                    onExitSearch: handleSearchExit,
+                    onSubmitSearch: store.advanceSearchResult,
+                    onSelectFilter: { filter in
+                        allAppsFilter = filter
+                        activateLayoutMode(.allApps)
+                    },
+                    onCreateGroup: presentNewGroup,
+                    onShowHelp: {
                         isAllAppsOptionsPresented = false
                         resetSearch()
                         showHelp = true
-                    } label: {
-                        ZizaiTopChromeActionSymbol(systemName: "questionmark.circle")
                     }
-                    .buttonStyle(.plain)
-                    .zizaiGlassCapsule(interactive: true)
-                    .accessibilityLabel("使用帮助")
-                    .accessibilityIdentifier(ZizaiAccessibilityID.helpButton)
-                }
+                )
             }
         }
         .padding(.leading, TopChromeMetrics.leadingPadding)
@@ -341,6 +351,7 @@ struct RootView: View {
                     onDeleteGroup: { groupPendingDeletion = $0 }
                 )
                 .environmentObject(store)
+                .environmentObject(removalCoordinator)
             )
             .frame(maxWidth: .infinity, maxHeight: .infinity)
 
@@ -361,6 +372,7 @@ struct RootView: View {
                     onDeleteGroup: { groupPendingDeletion = $0 }
                 )
                 .environmentObject(store)
+                .environmentObject(removalCoordinator)
             )
             .frame(maxWidth: .infinity, maxHeight: .infinity)
 
@@ -379,12 +391,14 @@ struct RootView: View {
                     filter: $allAppsFilter
                 )
                 .environmentObject(store)
+                .environmentObject(removalCoordinator)
             )
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
     }
 
     private func activateLayoutMode(_ mode: LayoutMode) {
+        removalCoordinator.endManagement(reason: .navigation)
         guard activeLayoutMode != mode else { return }
         isAllAppsOptionsPresented = false
         resetSearch()
@@ -441,6 +455,7 @@ struct RootView: View {
     }
 
     private func presentNewGroup() {
+        removalCoordinator.endManagement(reason: .navigation)
         isAllAppsOptionsPresented = false
         resetSearch()
         let scale = max(store.canvasScale, 0.01)
@@ -460,6 +475,7 @@ struct RootView: View {
     }
 
     private func focusSearch() {
+        removalCoordinator.endManagement(reason: .navigation)
         isAllAppsOptionsPresented = false
         setSearchPresented(true)
         // The field stays mounted in both states, so it can become first responder
@@ -495,7 +511,6 @@ struct RootView: View {
     }
 
     private func setSearchPresented(_ isPresented: Bool) {
-        AppTooltipPanelController.shared.setPresentationEnabled(!isPresented)
         isSearchPresented = isPresented
     }
 

@@ -18,9 +18,13 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 ENTITLEMENTS_PATH = ROOT / "Resources" / "ZizaiLaunchpad.entitlements"
 FOLDER_ACCESS_PATH = ROOT / "Sources" / "ApplicationFolderAccess.swift"
+REMOVAL_PATH = ROOT / "Sources" / "ApplicationRemoval.swift"
+REMOVAL_PRESENTER_PATH = ROOT / "Sources" / "ApplicationRemovalAuthorizationPresenter.swift"
+REMOVAL_SERVICES_PATH = ROOT / "Sources" / "ApplicationRemovalServices.swift"
+TRASH_MOVER_PATH = ROOT / "Sources" / "ApplicationTrashMover.swift"
 
 APP_SANDBOX = "com.apple.security.app-sandbox"
-USER_SELECTED_READ_ONLY = "com.apple.security.files.user-selected.read-only"
+USER_SELECTED_READ_WRITE = "com.apple.security.files.user-selected.read-write"
 APP_SCOPED_BOOKMARKS = "com.apple.security.files.bookmarks.app-scope"
 TEMPORARY_EXCEPTION_PREFIX = "com.apple.security.temporary-exception"
 
@@ -43,7 +47,7 @@ def read_plist(path: Path) -> dict[str, object]:
 def validate_entitlements(entitlements: dict[str, object], label: str) -> None:
     required = {
         APP_SANDBOX: "App Sandbox",
-        USER_SELECTED_READ_ONLY: "用户选择只读文件夹",
+        USER_SELECTED_READ_WRITE: "用户选择的读写文件夹",
         APP_SCOPED_BOOKMARKS: "持久 app-scoped security bookmark",
     }
     for key, capability in required.items():
@@ -84,6 +88,10 @@ def main() -> None:
     args = parser.parse_args()
 
     source = FOLDER_ACCESS_PATH.read_text(encoding="utf-8")
+    removal_source = REMOVAL_PATH.read_text(encoding="utf-8")
+    removal_presenter_source = REMOVAL_PRESENTER_PATH.read_text(encoding="utf-8")
+    removal_services_source = REMOVAL_SERVICES_PATH.read_text(encoding="utf-8")
+    trash_mover_source = TRASH_MOVER_PATH.read_text(encoding="utf-8")
     persistent_bookmark_markers = (
         ".withSecurityScope",
         ".securityScopeAllowOnlyReadAccess",
@@ -92,7 +100,33 @@ def main() -> None:
     )
     missing_markers = [marker for marker in persistent_bookmark_markers if marker not in source]
     if missing_markers:
-        fail("文件夹授权实现缺少完整的持久只读安全书签生命周期：" + ", ".join(missing_markers))
+        fail("文件夹授权实现缺少完整的持久安全书签生命周期：" + ", ".join(missing_markers))
+
+    removal_markers = (
+        "ApplicationRemovalPolicy",
+        "beginRemovalAccess",
+        "endRemovalAccess",
+        "NSOpenPanel",
+        "for: .trashDirectory",
+        "try fileManager.moveItem",
+        "sourceStillPresent",
+        "destinationMissing",
+    )
+    missing_removal_markers = [
+        marker
+        for marker in removal_markers
+        if marker
+        not in source
+        + removal_source
+        + removal_presenter_source
+        + removal_services_source
+        + trash_mover_source
+    ]
+    if missing_removal_markers:
+        fail("应用移除能力缺少授权、进程内废纸篓移动或双向结果核验：" + ", ".join(missing_removal_markers))
+
+    if "trashItem(" in removal_services_source + trash_mover_source:
+        fail("应用移除不得恢复会委托 CategoriesService 的 trashItem 调用")
 
     declared = read_plist(ENTITLEMENTS_PATH)
     validate_entitlements(declared, "源码配置")
@@ -100,11 +134,11 @@ def main() -> None:
     if args.app:
         built = signed_entitlements(args.app.resolve())
         validate_entitlements(built, "构建产物")
-        for key in (APP_SANDBOX, USER_SELECTED_READ_ONLY, APP_SCOPED_BOOKMARKS):
+        for key in (APP_SANDBOX, USER_SELECTED_READ_WRITE, APP_SCOPED_BOOKMARKS):
             if built.get(key) != declared.get(key):
                 fail(f"源码配置与构建产物不一致：{key}")
 
-    print("安全能力契约通过：沙盒、用户选择只读访问与持久 app-scoped bookmark 一致。")
+    print("安全能力契约通过：扫描书签保持只读，应用管理使用用户选择的读写授权并在本进程移入系统废纸篓。")
 
 
 if __name__ == "__main__":

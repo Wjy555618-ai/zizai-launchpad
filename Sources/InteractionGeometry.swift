@@ -23,6 +23,71 @@ struct CanvasViewportTransform: Equatable {
     let offset: CGSize
 }
 
+/// One local, presentation-only viewport transaction. Pointer-frequency input
+/// mutates this value while the persisted LauncherStore remains unchanged.
+/// The final transform is committed once when the interaction ends.
+struct CanvasViewportInteractionSession: Equatable {
+    let baseline: CanvasViewportTransform
+    private(set) var presentation: CanvasViewportTransform
+
+    init(baseline: CanvasViewportTransform) {
+        self.baseline = baseline
+        presentation = baseline
+    }
+
+    mutating func translate(by delta: CGSize) {
+        presentation = CanvasViewportTransform(
+            scale: presentation.scale,
+            offset: CGSize(
+                width: presentation.offset.width + delta.width,
+                height: presentation.offset.height + delta.height
+            )
+        )
+    }
+
+    mutating func setTranslation(
+        _ translation: CGSize,
+        from origin: CanvasViewportTransform
+    ) {
+        presentation = CanvasViewportTransform(
+            scale: origin.scale,
+            offset: CGSize(
+                width: origin.offset.width + translation.width,
+                height: origin.offset.height + translation.height
+            )
+        )
+    }
+
+    mutating func zoom(by delta: CGFloat, around anchor: CGPoint, in viewport: CGSize) {
+        let oldScale = presentation.scale
+        let newScale = CanvasViewportMetrics.clampedScale(oldScale + delta)
+        guard abs(newScale - oldScale) > 0.000_001 else { return }
+        presentation = CanvasViewportTransform(
+            scale: newScale,
+            offset: InteractionGeometry.anchoredCanvasOffset(
+                currentOffset: presentation.offset,
+                oldScale: oldScale,
+                newScale: newScale,
+                anchor: anchor,
+                viewport: viewport
+            )
+        )
+    }
+
+    /// Transform applied to a surface already rendered at `baseline`.
+    var compositorScale: CGFloat {
+        presentation.scale / max(0.01, baseline.scale)
+    }
+
+    var compositorOffset: CGSize {
+        let ratio = compositorScale
+        return CGSize(
+            width: presentation.offset.width - baseline.offset.width * ratio,
+            height: presentation.offset.height - baseline.offset.height * ratio
+        )
+    }
+}
+
 /// Automatic canvas navigation keeps content clear of the floating controls.
 /// Manual panning may still move content beneath the non-interactive edge fade.
 enum CanvasViewportMetrics {

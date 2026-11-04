@@ -48,6 +48,21 @@
 		A10000000000000000000129 /* LibraryAppViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000002C /* LibraryAppViews.swift */; };
 		A1000000000000000000012A /* LibraryGroupViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000002D /* LibraryGroupViews.swift */; };
 		A1000000000000000000012B /* LibraryTooltipViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000002E /* LibraryTooltipViews.swift */; };
+		A1000000000000000000012C /* ApplicationRemoval.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000002F /* ApplicationRemoval.swift */; };
+		A1000000000000000000012D /* ApplicationManagementViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000030 /* ApplicationManagementViews.swift */; };
+		A1000000000000000000012E /* ApplicationManagementChrome.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000031 /* ApplicationManagementChrome.swift */; };
+		A1000000000000000000012F /* ApplicationManagementLifecycle.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000032 /* ApplicationManagementLifecycle.swift */; };
+		A10000000000000000000130 /* ApplicationRemovalServices.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000033 /* ApplicationRemovalServices.swift */; };
+		A10000000000000000000131 /* ApplicationManagementMotion.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000034 /* ApplicationManagementMotion.swift */; };
+		A10000000000000000000132 /* ApplicationManagementTopChrome.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000035 /* ApplicationManagementTopChrome.swift */; };
+		A10000000000000000000133 /* ApplicationRemovalAuthorizationPresenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000036 /* ApplicationRemovalAuthorizationPresenter.swift */; };
+		A10000000000000000000134 /* ApplicationRemovalCoordinator+Management.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000037 /* ApplicationRemovalCoordinator+Management.swift */; };
+		A10000000000000000000135 /* ApplicationManagementJiggle.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000038 /* ApplicationManagementJiggle.swift */; };
+		A10000000000000000000136 /* ApplicationRemovalAuthorizationScope.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000039 /* ApplicationRemovalAuthorizationScope.swift */; };
+		A10000000000000000000137 /* ApplicationManagementPermission.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000003A /* ApplicationManagementPermission.swift */; };
+		A10000000000000000000138 /* ApplicationTrashMover.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000003B /* ApplicationTrashMover.swift */; };
+		A10000000000000000000139 /* ApplicationRemovalCompletion.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000003C /* ApplicationRemovalCompletion.swift */; };
+		A1000000000000000000013A /* ApplicationRemoved.wav in Resources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000003D /* ApplicationRemoved.wav */; };
 		B20000000000000000000101 /* ApplicationIdentityTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000001 /* ApplicationIdentityTests.swift */; };
 		B20000000000000000000102 /* InteractionGeometryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000003 /* InteractionGeometryTests.swift */; };
 		B20000000000000000000103 /* LoginItemManagerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000004 /* LoginItemManagerTests.swift */; };
@@ -59,6 +74,7 @@
 		B20000000000000000000109 /* AppScannerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2000000000000000000000A /* AppScannerTests.swift */; };
 		B2000000000000000000010A /* LaunchPresentationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2000000000000000000000B /* LaunchPresentationTests.swift */; };
 		B2000000000000000000010B /* TestApplicationFolderAuthorizationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2000000000000000000000C /* TestApplicationFolderAuthorizationService.swift */; };
+		B2000000000000000000010C /* ApplicationRemovalTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2000000000000000000000D /* ApplicationRemovalTests.swift */; };
 		C30000000000000000000101 /* LaunchpadUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C30000000000000000000001 /* LaunchpadUITests.swift */; };
 /* End PBXBuildFile section */
 
@@ -126,6 +142,21 @@
 		A1000000000000000000002C /* LibraryAppViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryAppViews.swift; sourceTree = "<group>"; };
 		A1000000000000000000002D /* LibraryGroupViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryGroupViews.swift; sourceTree = "<group>"; };
 		A1000000000000000000002E /* LibraryTooltipViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryTooltipViews.swift; sourceTree = "<group>"; };
+		A1000000000000000000002F /* ApplicationRemoval.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApplicationRemoval.swift; sourceTree = "<group>"; };
+		A10000000000000000000030 /* ApplicationManagementViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApplicationManagementViews.swift; sourceTree = "<group>"; };
+		A10000000000000000000031 /* ApplicationManagementChrome.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApplicationManagementChrome.swift; sourceTree = "<group>"; };
+		A10000000000000000000032 /* ApplicationManagementLifecycle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApplicationManagementLifecycle.swift; sourceTree = "<group>"; };
+		A10000000000000000000033 /* ApplicationRemovalServices.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApplicationRemovalServices.swift; sourceTree = "<group>"; };
+		A10000000000000000000034 /* ApplicationManagementMotion.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApplicationManagementMotion.swift; sourceTree = "<group>"; };
+		A10000000000000000000035 /* ApplicationManagementTopChrome.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApplicationManagementTopChrome.swift; sourceTree = "<group>"; };
+		A10000000000000000000036 /* ApplicationRemovalAuthorizationPresenter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApplicationRemovalAuthorizationPresenter.swift; sourceTree = "<group>"; };
+		A10000000000000000000037 /* ApplicationRemovalCoordinator+Management.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ApplicationRemovalCoordinator+Management.swift"; sourceTree = "<group>"; };
+		A10000000000000000000038 /* ApplicationManagementJiggle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApplicationManagementJiggle.swift; sourceTree = "<group>"; };
+		A10000000000000000000039 /* ApplicationRemovalAuthorizationScope.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApplicationRemovalAuthorizationScope.swift; sourceTree = "<group>"; };
+		A1000000000000000000003A /* ApplicationManagementPermission.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApplicationManagementPermission.swift; sourceTree = "<group>"; };
+		A1000000000000000000003B /* ApplicationTrashMover.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApplicationTrashMover.swift; sourceTree = "<group>"; };
+		A1000000000000000000003C /* ApplicationRemovalCompletion.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApplicationRemovalCompletion.swift; sourceTree = "<group>"; };
+		A1000000000000000000003D /* ApplicationRemoved.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = ApplicationRemoved.wav; sourceTree = "<group>"; };
 		B20000000000000000000001 /* ApplicationIdentityTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApplicationIdentityTests.swift; sourceTree = "<group>"; };
 		B20000000000000000000002 /* 自在启动台Tests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "自在启动台Tests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		B20000000000000000000003 /* InteractionGeometryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InteractionGeometryTests.swift; sourceTree = "<group>"; };
@@ -138,6 +169,7 @@
 		B2000000000000000000000A /* AppScannerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppScannerTests.swift; sourceTree = "<group>"; };
 		B2000000000000000000000B /* LaunchPresentationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LaunchPresentationTests.swift; sourceTree = "<group>"; };
 		B2000000000000000000000C /* TestApplicationFolderAuthorizationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestApplicationFolderAuthorizationService.swift; sourceTree = "<group>"; };
+		B2000000000000000000000D /* ApplicationRemovalTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApplicationRemovalTests.swift; sourceTree = "<group>"; };
 		C30000000000000000000001 /* LaunchpadUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LaunchpadUITests.swift; sourceTree = "<group>"; };
 		C30000000000000000000002 /* 自在启动台UITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "自在启动台UITests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -184,6 +216,20 @@
 				A10000000000000000000020 /* AllAppsViews.swift */,
 				A10000000000000000000027 /* AppPresentationViews.swift */,
 				A10000000000000000000012 /* ApplicationFolderAccess.swift */,
+				A10000000000000000000031 /* ApplicationManagementChrome.swift */,
+				A10000000000000000000038 /* ApplicationManagementJiggle.swift */,
+				A10000000000000000000032 /* ApplicationManagementLifecycle.swift */,
+				A10000000000000000000034 /* ApplicationManagementMotion.swift */,
+				A1000000000000000000003A /* ApplicationManagementPermission.swift */,
+				A10000000000000000000035 /* ApplicationManagementTopChrome.swift */,
+				A10000000000000000000030 /* ApplicationManagementViews.swift */,
+				A1000000000000000000002F /* ApplicationRemoval.swift */,
+				A1000000000000000000003C /* ApplicationRemovalCompletion.swift */,
+				A10000000000000000000036 /* ApplicationRemovalAuthorizationPresenter.swift */,
+				A10000000000000000000039 /* ApplicationRemovalAuthorizationScope.swift */,
+				A10000000000000000000037 /* ApplicationRemovalCoordinator+Management.swift */,
+				A10000000000000000000033 /* ApplicationRemovalServices.swift */,
+				A1000000000000000000003B /* ApplicationTrashMover.swift */,
 				A10000000000000000000018 /* ApplicationCatalogLogic.swift */,
 				A1000000000000000000001E /* ApplicationSearchPolicy.swift */,
 				A10000000000000000000001 /* AppScanner.swift */,
@@ -229,6 +275,7 @@
 				A10000000000000000000014 /* AppIcon.icon */,
 				A10000000000000000000015 /* AppIcon-1024.png */,
 				A10000000000000000000019 /* BrandMarkForeground.svg */,
+				A1000000000000000000003D /* ApplicationRemoved.wav */,
 				A1000000000000000000000D /* Assets.xcassets */,
 				A1000000000000000000000E /* PrivacyInfo.xcprivacy */,
 				A1000000000000000000000F /* Info.plist */,
@@ -252,6 +299,7 @@
 			children = (
 				B20000000000000000000009 /* ApplicationFolderAccessTests.swift */,
 				B20000000000000000000001 /* ApplicationIdentityTests.swift */,
+				B2000000000000000000000D /* ApplicationRemovalTests.swift */,
 				B2000000000000000000000A /* AppScannerTests.swift */,
 				B20000000000000000000003 /* InteractionGeometryTests.swift */,
 				B2000000000000000000000B /* LaunchPresentationTests.swift */,
@@ -381,6 +429,7 @@
 			files = (
 				A10000000000000000000111 /* AppIcon.icon in Resources */,
 				A10000000000000000000116 /* BrandMarkForeground.svg in Resources */,
+				A1000000000000000000013A /* ApplicationRemoved.wav in Resources */,
 				A1000000000000000000010E /* PrivacyInfo.xcprivacy in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -409,6 +458,20 @@
 				A1000000000000000000011D /* AllAppsViews.swift in Sources */,
 				A10000000000000000000124 /* AppPresentationViews.swift in Sources */,
 				A1000000000000000000010F /* ApplicationFolderAccess.swift in Sources */,
+				A1000000000000000000012E /* ApplicationManagementChrome.swift in Sources */,
+				A10000000000000000000135 /* ApplicationManagementJiggle.swift in Sources */,
+				A1000000000000000000012F /* ApplicationManagementLifecycle.swift in Sources */,
+				A10000000000000000000131 /* ApplicationManagementMotion.swift in Sources */,
+				A10000000000000000000137 /* ApplicationManagementPermission.swift in Sources */,
+				A10000000000000000000132 /* ApplicationManagementTopChrome.swift in Sources */,
+				A1000000000000000000012D /* ApplicationManagementViews.swift in Sources */,
+				A1000000000000000000012C /* ApplicationRemoval.swift in Sources */,
+				A10000000000000000000139 /* ApplicationRemovalCompletion.swift in Sources */,
+				A10000000000000000000130 /* ApplicationRemovalServices.swift in Sources */,
+				A10000000000000000000138 /* ApplicationTrashMover.swift in Sources */,
+				A10000000000000000000133 /* ApplicationRemovalAuthorizationPresenter.swift in Sources */,
+				A10000000000000000000136 /* ApplicationRemovalAuthorizationScope.swift in Sources */,
+				A10000000000000000000134 /* ApplicationRemovalCoordinator+Management.swift in Sources */,
 				A10000000000000000000115 /* ApplicationCatalogLogic.swift in Sources */,
 				A1000000000000000000011B /* ApplicationSearchPolicy.swift in Sources */,
 				A10000000000000000000101 /* AppScanner.swift in Sources */,
@@ -453,6 +516,7 @@
 			files = (
 				B20000000000000000000108 /* ApplicationFolderAccessTests.swift in Sources */,
 				B20000000000000000000101 /* ApplicationIdentityTests.swift in Sources */,
+				B2000000000000000000010C /* ApplicationRemovalTests.swift in Sources */,
 				B20000000000000000000109 /* AppScannerTests.swift in Sources */,
 				B20000000000000000000102 /* InteractionGeometryTests.swift in Sources */,
 				B2000000000000000000010A /* LaunchPresentationTests.swift in Sources */,
