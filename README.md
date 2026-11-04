@@ -143,6 +143,6 @@ handoff/       图标来源、兼容性调查与当前验证入口（当前视�
 
 ## 发布状态
 
-当前源码对应 `1.0.0 (1)` 候选版。仓库不包含 Apple Developer 证书、描述文件或账号凭据；正式分发需要使用发布者自己的 Team、Bundle ID 和签名资产。
+当前源码对应 `1.0.0 (1)` 候选版。Release 已配置发布者 Team 与 `com.wangzhentao.ZizaiLaunchpad`，`scripts/archive_app_store.sh` 会通过 Xcode 自动签名生成 Archive 和 App Store 安装包。仓库不包含 Apple Developer 证书、描述文件或账号凭据；这些签名资产只由 Xcode 和钥匙串管理。
 
 源码使用 [MIT License](LICENSE)。

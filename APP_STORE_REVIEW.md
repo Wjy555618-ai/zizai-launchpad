@@ -2,7 +2,7 @@
 
 ## 当前结论
 
-1.0.0 (1) 已实现本机核心功能和权限链路，并为构建、沙盒边界、隐私声明、交互模型、应用扫描、多实例迁移、搜索、应用移除和登录启动开关建立了可重复门槛。额外目录扫描使用持久 app-scoped 只读书签；应用管理使用独立书签，并只在用户确认的系统回收操作期间激活，不申请临时沙盒例外。是否通过必须以当前源码重新运行 `verify_release.sh` 生成的指纹证据为准，本文不保存易过期的单次结论。**当前仍不能直接上传 App Store Connect**：工程仍使用本地占位 Bundle ID，应用只有临时签名，上架账号与商店资料尚未配置。
+1.0.0 (1) 已实现本机核心功能和权限链路，并为构建、沙盒边界、隐私声明、交互模型、应用扫描、多实例迁移、搜索、应用移除和登录启动开关建立了可重复门槛。额外目录扫描使用持久 app-scoped 只读书签；应用管理使用独立书签，并只在用户确认的系统回收操作期间激活，不申请临时沙盒例外。是否通过必须以当前源码重新运行 `verify_release.sh` 生成的指纹证据为准，本文不保存易过期的单次结论。Release 已配置正式 Team 与 `com.wangzhentao.ZizaiLaunchpad`，并已通过自动签名 Archive 和 App Store 安装包导出。**当前仍不能执行 Apple 服务器端 Validate App**：App Store Connect 尚未创建对应应用记录，商店资料与截图按发布者决定暂缓。
 
 苹果审核只能由 Apple 最终决定，任何开发者都不能承诺“100% 必过”。本项目的完成标准是：没有已知产品缺陷或政策冲突，并通过 Xcode Archive、Validate App、真实设备回归与 App Store Connect 材料检查。
 
@@ -39,10 +39,9 @@
 
 ## 当前硬阻断
 
-1. 工程仍使用 `local.wangzhentao.ZizaiLaunchpad` 本地占位标识，必须替换成开发者账号中注册的最终 Bundle ID。
-2. 当前应用是 ad-hoc 临时签名，没有 Team Identifier、Mac App Distribution 证书或 App Store 描述文件。
-3. 还缺 App Store Connect 中的隐私政策 HTTPS 地址、支持页面、审核联系人、SKU、销售地区和价格；四张技术规格合格的候选截图已生成，提交前仍需发布者确认最终选图与文案。
-4. 深浅色、降低动态效果、降低透明度和紧凑窗口已纳入自动渲染回归；正式提交前仍必须在真实 macOS 13 和 Intel Mac 上运行，并由人使用 VoiceOver 完成焦点顺序、读取文案和拖放替代路径验收。
+1. App Store Connect 尚未创建 `com.wangzhentao.ZizaiLaunchpad` 应用记录，因此 Apple 服务器端 Validate App 会明确返回“App record not found”。这不是包签名错误，创建记录后必须重新验证。
+2. 还缺 App Store Connect 中的隐私政策 HTTPS 地址、支持页面、审核联系人、SKU、销售地区和价格；候选截图与上传资料按发布者决定暂缓，不能冒充已完成。
+3. 深浅色、降低动态效果、降低透明度和紧凑窗口已纳入自动渲染回归；正式提交前仍必须在真实 macOS 13 和 Intel Mac 上运行，并由人使用 VoiceOver 完成焦点顺序、读取文案和拖放替代路径验收。
 
 ## 建议提供给审核人员的说明
 
@@ -55,10 +54,9 @@
 
 ## 需要开发者账号完成
 
-- 在 Apple Developer 中注册最终 Bundle ID，并替换当前本地标识。
-- 配置 Mac App Distribution 证书、Mac Installer Distribution 证书和 App Store provisioning profile。
-- 在 App Store Connect 填写隐私政策 HTTPS 地址、支持页面、年龄分级、类别、版权、截图和审核联系信息。
-- 使用正式 Xcode 工程 Archive，执行 Validate App，再上传构建版本。
+- 在 App Store Connect 创建与 `com.wangzhentao.ZizaiLaunchpad` 对应的应用记录。
+- 填写隐私政策 HTTPS 地址、支持页面、年龄分级、类别、版权、截图和审核联系信息。
+- 使用 `archive_app_store.sh` 重新生成正式 Archive 与安装包，执行 Apple 服务器端 Validate App，再上传同一构建版本。
 - 在目标 macOS 版本、深色模式、降低动态效果、降低透明度、VoiceOver 和不同窗口尺寸下完成最终回归。
 
 ## 特别审核风险
@@ -74,9 +72,10 @@ Apple 审核指南 2.5.8 禁止创建替代桌面或主屏幕环境。产品文�
 ```sh
 ./scripts/verify_release.sh
 ./scripts/verify_unsigned_archive.sh
+./scripts/archive_app_store.sh
 ./scripts/audit_app_store.sh
 ```
 
-第一项验证产品工程与核心体验；第二项只验证未签名 Archive 的结构、Universal 2 二进制和 dSYM，可在配置正式身份前运行。最终标识、分发签名、Validate App 与上传回执必须通过正式提交链路另行验证，未签名 Archive 不得作为可提交或可分发产物。
+第一项验证产品工程与核心体验；第二项验证无需账号即可复现的 Archive 结构；第三项从 Xcode Release 唯一配置源生成正式签名 Archive 和 App Store 安装包；第四项核对最终标识、Team、分发摘要、dSYM、沙盒权限和商店资产。Apple 服务器端 Validate App 与上传回执仍必须在 App Store Connect 应用记录创建后补齐，未签名 Archive 不得作为可提交或可分发产物。
 
 配置正式身份后，还要使用同一 signed Archive 派生的安装版完成两条系统集成验收：用户选择应用目录后跨退出/重启恢复并可移除授权；登录项经系统批准后跨注销/重启静默准备并可取消注册。源码与模型测试通过只证明实现契约成立，不能替代 macOS 对正式签名产物的实际授权结果。

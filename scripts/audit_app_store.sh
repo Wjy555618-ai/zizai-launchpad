@@ -5,17 +5,23 @@ PROJECT_DIR="${0:A:h:h}"
 ARTIFACT_DIR="${ZIZAI_BUILD_DIR:-$PROJECT_DIR/.artifacts.noindex}"
 BUILD_APP_DIR="$ARTIFACT_DIR/自在启动台.app"
 INSTALLED_APP_DIR="${ZIZAI_INSTALL_DEST:-/Applications/自在启动台.app}"
+ARCHIVE_DIR="$ARTIFACT_DIR/自在启动台-AppStore.xcarchive"
+ARCHIVE_APP_DIR="$ARCHIVE_DIR/Products/Applications/自在启动台.app"
+ARCHIVE_DSYM_DIR="$ARCHIVE_DIR/dSYMs/自在启动台.app.dSYM"
+EXPORTED_PACKAGE="$ARTIFACT_DIR/AppStoreExport/自在启动台.pkg"
+EXPORT_SUMMARY="$ARTIFACT_DIR/AppStoreExport/DistributionSummary.plist"
 APP_DIR="$BUILD_APP_DIR"
 DSYM_DIR="$ARTIFACT_DIR/自在启动台.app.dSYM"
 INFO_PLIST="$PROJECT_DIR/Resources/Info.plist"
 FAILED=0
 source "$PROJECT_DIR/scripts/release_config.sh"
 
-# The installer deliberately removes the repository's .app after an atomic
-# install so LaunchServices can never index two active copies. Audit that sole
-# installed copy when the transient build copy is absent; the matching dSYM is
-# retained in build/ for crash-symbol validation.
-if [[ ! -d "$APP_DIR" && -d "$INSTALLED_APP_DIR" ]]; then
+# Prefer the signed App Store Archive. Fall back to the local development
+# artifact only when a signed archive has not been produced yet.
+if [[ -d "$ARCHIVE_APP_DIR" ]]; then
+  APP_DIR="$ARCHIVE_APP_DIR"
+  DSYM_DIR="$ARCHIVE_DSYM_DIR"
+elif [[ ! -d "$APP_DIR" && -d "$INSTALLED_APP_DIR" ]]; then
   APP_DIR="$INSTALLED_APP_DIR"
 fi
 
@@ -41,6 +47,7 @@ else
 fi
 
 BUNDLE_ID="$(zizai_release_setting "$PROJECT_DIR" PRODUCT_BUNDLE_IDENTIFIER 2>/dev/null || true)"
+TEAM_ID="$(zizai_release_setting "$PROJECT_DIR" DEVELOPMENT_TEAM 2>/dev/null || true)"
 MARKETING_VERSION="$(zizai_release_setting "$PROJECT_DIR" MARKETING_VERSION 2>/dev/null || true)"
 BUILD_NUMBER="$(zizai_release_setting "$PROJECT_DIR" CURRENT_PROJECT_VERSION 2>/dev/null || true)"
 
@@ -64,11 +71,19 @@ else
   block "Bundle ID 仍是本地占位符：${BUNDLE_ID:-未配置}"
 fi
 
+if [[ -n "$TEAM_ID" ]]; then
+  pass "已配置 Apple Developer Team：$TEAM_ID"
+else
+  block "Release 未配置 Apple Developer Team"
+fi
+
 if [[ -d "$APP_DIR" ]]; then
   pass "已找到当前可验证应用产物：$APP_DIR"
   SIGNATURE="$(/usr/bin/codesign -dvv "$APP_DIR" 2>&1 || true)"
   if [[ "$SIGNATURE" == *"Signature=adhoc"* ]] || [[ "$SIGNATURE" == *"TeamIdentifier=not set"* ]]; then
     block "当前应用是临时签名，没有 Apple Developer Team 和 Mac App Distribution 签名"
+  elif [[ "$SIGNATURE" != *"TeamIdentifier=$TEAM_ID"* ]]; then
+    block "应用签名 Team 与 Release 配置不一致"
   else
     pass "应用已使用正式开发者身份签名"
   fi
@@ -90,6 +105,22 @@ if [[ -d "$APP_DIR" && -d "$DSYM_DIR" ]]; then
   fi
 else
   block "缺少 Release dSYM，无法保证上线后崩溃报告可符号化"
+fi
+
+if [[ -f "$EXPORTED_PACKAGE" && -f "$EXPORT_SUMMARY" ]]; then
+  PACKAGE_TEAM="$(/usr/libexec/PlistBuddy -c 'Print :自在启动台.pkg:0:team:id' "$EXPORT_SUMMARY" 2>/dev/null || true)"
+  PACKAGE_APP_ID="$(/usr/libexec/PlistBuddy -c 'Print :自在启动台.pkg:0:entitlements:com.apple.application-identifier' "$EXPORT_SUMMARY" 2>/dev/null || true)"
+  PACKAGE_CERTIFICATE="$(/usr/libexec/PlistBuddy -c 'Print :自在启动台.pkg:0:certificate:type' "$EXPORT_SUMMARY" 2>/dev/null || true)"
+  if [[ "$PACKAGE_TEAM" == "$TEAM_ID" \
+     && "$PACKAGE_APP_ID" == "$TEAM_ID.$BUNDLE_ID" \
+     && "$PACKAGE_CERTIFICATE" == *"Apple Distribution"* ]] \
+     && /usr/sbin/pkgutil --check-signature "$EXPORTED_PACKAGE" >/dev/null 2>&1; then
+    pass "App Store 安装包、分发证书、描述文件和应用标识一致"
+  else
+    block "App Store 安装包签名或分发摘要与 Release 配置不一致"
+  fi
+else
+  block "尚未从正式 Archive 导出 App Store 安装包"
 fi
 
 if /usr/bin/grep -q "com.apple.security.temporary-exception" "$PROJECT_DIR/Resources/ZizaiLaunchpad.entitlements"; then
