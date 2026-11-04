@@ -9,11 +9,32 @@ import SwiftUI
                 !(hostedContent is NSVisualEffectView)
             else { return }
 
-            let material = NSVisualEffectView()
-            material.appearance = window.appearance
-            material.material = .sidebar
-            material.blendingMode = .behindWindow
-            material.state = .followsWindowActiveState
+            let material: NSView
+            #if ZIZAI_VISUAL_AUDIT
+                // A behind-window visual effect intentionally samples the
+                // WindowServer backdrop. That is correct in production but
+                // makes an off-screen, byte-for-byte audit depend on the
+                // runner's desktop and active-window timing. Use the same
+                // resolved semantic window color as an opaque audit backing;
+                // production keeps the native material below.
+                let auditMaterial = NSView()
+                auditMaterial.wantsLayer = true
+                var auditBackground = NSColor.windowBackgroundColor
+                window.effectiveAppearance.performAsCurrentDrawingAppearance {
+                    auditBackground =
+                        NSColor.windowBackgroundColor.usingColorSpace(.sRGB)
+                        ?? NSColor.windowBackgroundColor
+                }
+                auditMaterial.layer?.backgroundColor = auditBackground.cgColor
+                material = auditMaterial
+            #else
+                let systemMaterial = NSVisualEffectView()
+                systemMaterial.appearance = window.appearance
+                systemMaterial.material = .sidebar
+                systemMaterial.blendingMode = .behindWindow
+                systemMaterial.state = .followsWindowActiveState
+                material = systemMaterial
+            #endif
             material.addSubview(hostedContent)
             hostedContent.translatesAutoresizingMaskIntoConstraints = false
             NSLayoutConstraint.activate([
