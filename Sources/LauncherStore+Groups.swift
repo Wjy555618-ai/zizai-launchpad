@@ -179,6 +179,35 @@ extension LauncherStore {
         )
     }
 
+    /// Pointer-frequency preview performs only deterministic local geometry.
+    /// Collision checks, layout repair, Store mutation, persistence and undo
+    /// remain the single release-time transaction in `resolvedGroupResize`.
+    func interactiveGroupResizePreview(
+        id: String,
+        proposedFrame: CGRect,
+        originalFrame: CGRect,
+        originalAppPositions: [String: CGPoint]
+    ) -> GroupResizePreview? {
+        let minimum = CGSize(
+            width: InteractionGeometry.minimumGroupWidth,
+            height: InteractionGeometry.minimumGroupHeight
+        )
+        guard proposedFrame.width >= minimum.width,
+            proposedFrame.height >= minimum.height,
+            InteractionGeometry.capacity(of: proposedFrame) >= originalAppPositions.count
+        else { return nil }
+
+        return GroupResizePreview(
+            groupID: id,
+            frame: proposedFrame,
+            appPositions: SpatialLayoutEngine.mappedPositions(
+                originalAppPositions,
+                from: InteractionGeometry.contentRect(for: originalFrame),
+                to: InteractionGeometry.contentRect(for: proposedFrame)
+            )
+        )
+    }
+
     func adjustGroupSize(id: String, by delta: CGFloat) {
         guard let group = group(withID: id) else { return }
         let originalFrame = SpatialLayoutEngine.frame(for: group)

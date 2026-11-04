@@ -66,6 +66,29 @@ enum TooltipLayeringAudit {
         require(secondPanel.isVisible, "切换图标后气泡消失")
         require(centered(secondPanel, above: secondAnchor, in: window), "切换后气泡仍停留在旧图标")
 
+        AppTooltipPanelController.shared.handleViewportMovement()
+        require(secondPanel.isVisible, "滚动开始时气泡被硬切，没有执行渐隐")
+        settle()
+        require(window.childWindows?.isEmpty != false, "内容滚动后气泡仍停在旧屏幕坐标")
+        require(!secondPanel.isVisible, "内容滚动后气泡窗口仍可见")
+
+        AppTooltipPanelController.shared.show(
+            id: "second",
+            text: "滚动中不应复活",
+            anchorView: secondAnchor
+        )
+        settle()
+        require(window.childWindows?.isEmpty != false, "同一悬停状态在滚动后错误复活")
+
+        AppTooltipPanelController.shared.hide(id: "second")
+        AppTooltipPanelController.shared.show(
+            id: "second",
+            text: "重新移入后恢复",
+            anchorView: secondAnchor
+        )
+        settle()
+        require(window.childWindows?.first === secondPanel, "重新移入后气泡没有恢复")
+
         AppTooltipPanelController.shared.hide(id: "second")
         settle()
         require(window.childWindows?.isEmpty != false, "离开图标后气泡子窗口没有收起")

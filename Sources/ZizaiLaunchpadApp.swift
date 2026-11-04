@@ -132,6 +132,7 @@ struct ZizaiLaunchpadApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     @StateObject private var store: LauncherStore
     @StateObject private var applicationFolderAccess: ApplicationFolderAccess
+    @StateObject private var removalCoordinator: ApplicationRemovalCoordinator
     @StateObject private var layoutModeController: LayoutModeController
     @StateObject private var loginItemManager = LoginItemManager()
 
@@ -159,6 +160,22 @@ struct ZizaiLaunchpadApp: App {
         }
         _store = StateObject(wrappedValue: store)
         _applicationFolderAccess = StateObject(wrappedValue: applicationFolderAccess)
+        _removalCoordinator = StateObject(
+            wrappedValue: ApplicationRemovalCoordinator(
+                authorizer: applicationFolderAccess
+            ) { [weak store] app in
+                guard let store else { return }
+                let reduceMotion = NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
+                if reduceMotion {
+                    store.completeSuccessfulRemoval(app)
+                } else {
+                    withAnimation(ApplicationManagementMotion.removalReflow) {
+                        store.completeSuccessfulRemoval(app)
+                    }
+                }
+                store.presentToast("已将“\(app.chineseName)”移到废纸篓")
+            }
+        )
         _layoutModeController = StateObject(
             wrappedValue: LayoutModeController(selection: store.layoutMode)
         )
@@ -168,6 +185,7 @@ struct ZizaiLaunchpadApp: App {
         WindowGroup("自在启动台") {
             RootView(layoutModeController: layoutModeController)
                 .environmentObject(store)
+                .environmentObject(removalCoordinator)
         }
         .windowStyle(.hiddenTitleBar)
         .defaultSize(width: 1360, height: 860)

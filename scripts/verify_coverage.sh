@@ -139,6 +139,8 @@ require_weighted_at_least "核心行为加权覆盖率" 85 \
   "Sources/SpatialLayoutEngine.swift" \
   "Sources/StatePersistence.swift" \
   "Sources/ApplicationFolderAccess.swift" \
+  "Sources/ApplicationRemoval.swift" \
+  "Sources/ApplicationRemovalServices.swift" \
   "Sources/LaunchPresentation.swift"
 require_at_least "状态聚合根" "Sources/LauncherStore.swift" 80
 require_at_least "目录与查询命令" "Sources/LauncherStore+Catalog.swift" 80
@@ -153,6 +155,10 @@ require_at_least "登录项核心" "Sources/LoginItemSettings.swift" 80
 require_at_least "气泡生命周期" "Sources/TooltipPresentation.swift" 75
 require_at_least "异步持久化写入" "Sources/StatePersistence.swift" 75
 require_at_least "应用目录持久授权" "Sources/ApplicationFolderAccess.swift" 70
+require_weighted_at_least "应用移除安全链路" 75 \
+  "Sources/ApplicationRemoval.swift" \
+  "Sources/ApplicationRemovalCoordinator+Management.swift" \
+  "Sources/ApplicationRemovalServices.swift"
 require_at_least "交互几何" "Sources/InteractionGeometry.swift" 90
 require_at_least "空间布局引擎" "Sources/SpatialLayoutEngine.swift" 80
 

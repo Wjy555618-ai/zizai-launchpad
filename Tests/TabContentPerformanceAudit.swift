@@ -11,6 +11,10 @@ enum TabContentPerformanceAudit {
 
         let apps = AppScanner.scan()
         let store = LauncherStore(stateDirectory: stateDirectory, appProvider: { apps })
+        let removalCoordinator = ApplicationRemovalCoordinator(
+            authorizer: AuditApplicationRemovalAuthorizer(),
+            onRemovalCompleted: { _ in }
+        )
         store.state.hasSeenWelcome = true
         IconCache.shared.prewarm(paths: apps.map(\.path))
         let layoutModeController = LayoutModeController(selection: store.layoutMode)
@@ -24,6 +28,7 @@ enum TabContentPerformanceAudit {
                 }
             )
             .environmentObject(store)
+            .environmentObject(removalCoordinator)
         )
         hosting.frame = CGRect(x: 0, y: 0, width: 1_360, height: 860)
         let window = NSWindow(

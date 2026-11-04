@@ -17,6 +17,7 @@ mkdir -p "$ARTIFACT_DIR"
   -strict-concurrency=complete \
   -framework AppKit \
   -framework Combine \
+  "$PROJECT_DIR/Sources/ApplicationRemovalAuthorizationScope.swift" \
   "$PROJECT_DIR/Sources/ApplicationFolderAccess.swift" \
   "${ZIZAI_STORE_AUDIT_SOURCE_FILES[@]}" \
   "$PROJECT_DIR/Tests/AsyncWorkPerformanceAudit.swift" \

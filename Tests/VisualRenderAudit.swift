@@ -41,6 +41,10 @@ enum VisualRenderAudit {
             stateDirectory: stateDirectory,
             appProvider: { fixtureApplications }
         )
+        let removalCoordinator = ApplicationRemovalCoordinator(
+            authorizer: AuditApplicationRemovalAuthorizer(),
+            onRemovalCompleted: { _ in }
+        )
         store.state.hasSeenWelcome = true
         store.state.layoutMode = layoutMode
         if layoutArgument == "storeGroups" {
@@ -138,6 +142,7 @@ enum VisualRenderAudit {
                 usesLayerVisibility: false
             )
             .environmentObject(store)
+            .environmentObject(removalCoordinator)
             if layoutArgument.hasPrefix("appearanceTransition") {
                 root = AnyView(applicationRoot)
             } else {

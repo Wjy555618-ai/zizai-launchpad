@@ -28,6 +28,22 @@ final class ApplicationIdentityTests: XCTestCase {
         XCTAssertEqual(uiConfiguration.mode, .uiTesting)
         XCTAssertEqual(uiConfiguration.applications, ZizaiLaunchConfiguration.fixtureApplications)
 
+        let denseUIConfiguration = ZizaiLaunchConfiguration.current(
+            environment: [
+                ZizaiLaunchConfiguration.uiTestingEnvironmentKey: "1",
+                ZizaiLaunchConfiguration.uiTestSessionEnvironmentKey: "dense-launch-mode-test",
+                ZizaiLaunchConfiguration.uiTestApplicationCountEnvironmentKey: "96",
+            ]
+        )
+        XCTAssertEqual(denseUIConfiguration.mode, .uiTesting)
+        XCTAssertEqual(denseUIConfiguration.applications?.count, 96)
+        XCTAssertEqual(
+            denseUIConfiguration.applications?.prefix(
+                ZizaiLaunchConfiguration.fixtureApplications.count
+            ),
+            ZizaiLaunchConfiguration.fixtureApplications[...]
+        )
+
         let inheritedTestActionConfiguration = ZizaiLaunchConfiguration.current(
             environment: [
                 "XCTestBundlePath": "/tmp/自在启动台Tests.xctest",

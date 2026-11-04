@@ -7,7 +7,10 @@ import Foundation
 struct TestApplicationFolderAuthorizationService:
     ApplicationFolderAuthorizationServicing
 {
-    func makeBookmark(for folder: URL) throws -> Data {
+    func makeBookmark(
+        for folder: URL,
+        access: ApplicationFolderBookmarkAccess
+    ) throws -> Data {
         Data(folder.standardizedFileURL.path.utf8)
     }
 

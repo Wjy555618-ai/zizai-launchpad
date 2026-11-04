@@ -30,6 +30,16 @@ trap cleanup_test_registration EXIT
 /usr/bin/xcrun swift-format lint --strict --recursive "$PROJECT_DIR/Sources" "$PROJECT_DIR/Tests"
 /bin/zsh "$PROJECT_DIR/scripts/build.sh" >/dev/null
 /usr/bin/codesign --verify --deep --strict "$APP_DIR"
+APP_BUNDLE_IDENTIFIER="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$APP_DIR/Contents/Info.plist")"
+DESIGNATED_REQUIREMENT="$(/usr/bin/codesign -dr - "$APP_DIR" 2>&1)"
+if [[ "$DESIGNATED_REQUIREMENT" != *"designated => identifier \"$APP_BUNDLE_IDENTIFIER\""* ]]; then
+  echo "本地安装包缺少稳定的指定签名要求：$DESIGNATED_REQUIREMENT" >&2
+  exit 1
+fi
+if [[ "$DESIGNATED_REQUIREMENT" == *"cdhash"* ]]; then
+  echo "本地安装包仍以易变 CDHash 作为应用管理权限身份：$DESIGNATED_REQUIREMENT" >&2
+  exit 1
+fi
 
 if ! /usr/bin/xcodebuild analyze \
   -project "$PROJECT_DIR/自在启动台.xcodeproj" \
@@ -72,7 +82,7 @@ fi
 ENTITLEMENTS="$(/usr/bin/codesign -d --entitlements :- "$APP_DIR" 2>/dev/null)"
 [[ "$ENTITLEMENTS" == *"com.apple.security.app-sandbox"* ]]
 [[ "$ENTITLEMENTS" == *"<true/>"* ]]
-[[ "$ENTITLEMENTS" == *"com.apple.security.files.user-selected.read-only"* ]]
+[[ "$ENTITLEMENTS" == *"com.apple.security.files.user-selected.read-write"* ]]
 [[ "$ENTITLEMENTS" == *"com.apple.security.files.bookmarks.app-scope"* ]]
 [[ "$ENTITLEMENTS" != *"com.apple.security.temporary-exception"* ]]
 /usr/bin/python3 "$PROJECT_DIR/scripts/verify_security_capabilities.py" --app "$APP_DIR"
@@ -91,6 +101,9 @@ ENTITLEMENTS="$(/usr/bin/codesign -d --entitlements :- "$APP_DIR" 2>/dev/null)"
 [[ "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIconName' "$APP_DIR/Contents/Info.plist")" == "AppIcon" ]]
 [[ -f "$APP_DIR/Contents/Resources/AppIcon.icns" ]]
 [[ -f "$APP_DIR/Contents/Resources/Assets.car" ]]
+[[ -f "$APP_DIR/Contents/Resources/ApplicationRemoved.wav" ]]
+/usr/bin/afinfo "$APP_DIR/Contents/Resources/ApplicationRemoved.wav" \
+  | /usr/bin/grep -q "estimated duration: 0.500000 sec"
 [[ ! -e "$APP_DIR/Contents/Resources/ZizaiAppIcon.icns" ]]
 
 ICON_SVG="$PROJECT_DIR/Resources/AppIcon-Source.svg"
@@ -130,10 +143,18 @@ if [[ -f "$PROJECT_DIR/handoff/assets/app-icon-source.png" ]]; then
   [[ "$MAIN_ICON_HASH" == "$HANDOFF_ICON_HASH" ]]
 fi
 
-if /usr/bin/grep -R -E "NSWorkspace\.shared\.recycle|AuthorizationExecuteWithPrivileges|URLSession|Sparkle|SUUpdater" "$PROJECT_DIR/Sources" >/dev/null; then
+if /usr/bin/grep -R -E "AuthorizationExecuteWithPrivileges|URLSession|Sparkle|SUUpdater" "$PROJECT_DIR/Sources" >/dev/null; then
   echo "发现不允许的高风险能力" >&2
   exit 1
 fi
+RECYCLE_MOVE_COUNT="$(/usr/bin/grep -h -E 'try fileManager\.moveItem' "$PROJECT_DIR/Sources/ApplicationTrashMover.swift" | /usr/bin/wc -l | /usr/bin/tr -d ' ')"
+[[ "$RECYCLE_MOVE_COUNT" == "1" ]]
+/usr/bin/grep -q 'for: \.trashDirectory' "$PROJECT_DIR/Sources/ApplicationTrashMover.swift"
+if /usr/bin/grep -R -E 'trashItem\(' "$PROJECT_DIR/Sources" --include='*.swift' >/dev/null; then
+  echo "发现会委托 CategoriesService 的 trashItem 调用" >&2
+  exit 1
+fi
+/usr/libexec/PlistBuddy -c 'Print :NSAppBundlesUsageDescription' "$PROJECT_DIR/Resources/Info.plist" >/dev/null
 
 /usr/bin/grep -q "LM_SKIP_METADATA_EXTRACTION = YES;" "$PROJECT_DIR/自在启动台.xcodeproj/project.pbxproj"
 if /usr/bin/grep -R -E '^[[:space:]]*import[[:space:]]+AppIntents([[:space:]]|$)' "$PROJECT_DIR/Sources" >/dev/null; then

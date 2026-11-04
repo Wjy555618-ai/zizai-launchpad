@@ -264,6 +264,7 @@ private struct AllAppsOptionsRow: View {
 
 private struct AllAppsTile: View {
     @EnvironmentObject private var store: LauncherStore
+    @EnvironmentObject private var removalCoordinator: ApplicationRemovalCoordinator
     let app: AppInfo
     @Binding var aliasTarget: AppInfo?
     @Binding var aliasDraft: String
@@ -272,7 +273,7 @@ private struct AllAppsTile: View {
 
     var body: some View {
         Button {
-            store.launch(app)
+            if !removalCoordinator.isManagementPresented { store.launch(app) }
         } label: {
             AppIconContent(
                 app: app,
@@ -295,6 +296,7 @@ private struct AllAppsTile: View {
         )
         .accessibilityHint(store.isHidden(app) ? "单击打开；当前未在空间和分组中显示" : "单击打开")
         .accessibilityIdentifier(ZizaiAccessibilityID.appTile(app.id))
+        .applicationManagement(for: app)
     }
 
     @ViewBuilder
@@ -318,5 +320,7 @@ private struct AllAppsTile: View {
         Divider()
         Button("在访达中显示", systemImage: "folder") { store.revealInFinder(app) }
         Button("打开应用", systemImage: "arrow.up.forward.app") { store.launch(app) }
+        Divider()
+        ApplicationRemovalMenuItem(app: app)
     }
 }

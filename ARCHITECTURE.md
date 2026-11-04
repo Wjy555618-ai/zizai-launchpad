@@ -24,10 +24,22 @@ Catalog   Library   Groups   Canvas
                  ▼
      LauncherStateHistory
           PersistedStateIO
+
+ApplicationRemovalPolicy
+          │
+          ▼
+ApplicationRemovalCoordinator
+   authorization + running check
+          │
+          ▼
+   FileManager.moveItem
+   to source-volume user Trash
 ```
 
 - `AppScanner` 只读扫描系统应用目录，以“Bundle ID + 规范化路径”识别安装实例，因此不会合并同一应用的多个安装版本。
-- `ApplicationFolderAccess` 管理用户主动授予的 app-scoped 只读安全范围书签，授权仅在扫描期间激活并成对释放；源码能力、entitlement 与签名产物由同一安全能力契约校验。
+- `ApplicationFolderAccess` 分开管理两种 app-scoped 安全范围书签：额外目录扫描始终使用只读书签；应用管理使用单独的读写书签。`ApplicationRemovalAuthorizationScope` 把 `/Applications`、`~/Applications` 和外部直接容器定义为唯一授权边界：同一边界下的应用复用一份书签，而安全范围访问只在一次已确认的系统回收操作期间激活和成对释放。
+- `ApplicationRemovalServices` 隔离系统路径保护、运行状态检测、App Management 权限拒绝分类、系统设置跳转与废纸篓移动。它通过 `.trashDirectory` 定位源磁盘对应的用户废纸篓，再在已激活安全范围的本进程内用 `moveItem` 直接移动；不再使用会把 `.app` 操作转交 `CategoriesService.xpc` 并丢失当前 App Management 授权主体的 `trashItem`。同名目标会生成唯一名称，只有原路径已消失且废纸篓目标已存在时才报告成功。`ApplicationRemovalOpenPanelPresenter` 把原生 `NSOpenPanel` 直接定位到预期授权边界，当前文件夹即为选择结果，用户无需选中 `.app`。`ApplicationRemovalCoordinator` 以 `idle / presenting / selectingAuthorization / awaitingAppManagementPermission / recycling` 单一状态机统一管理长按会话、两层系统授权、确认、返回自动重试和结果反馈；返回后只自动重试一次，同类失败会进入带错误域/代码的终态，绝不重新打开授权循环。
+- `ApplicationManagementJiggleIcon` 把管理模式持续抖动局限在图标的 Core Animation 合成层；SwiftUI 只处理有限次的进入与退出包络，因此持续视觉反馈不再造成整个应用网格逐帧求值和布局。
 - `ApplicationCatalogLogic` 生成分离的“可见词”与“技术身份词”，并承担旧身份迁移；`ApplicationSearchPolicy` 统一定义精确、前缀、连续片段和容错层级，技术词不参与子序列模糊匹配。
 - `LauncherStore` 是 `@MainActor` 上唯一的可观察状态聚合根，只拥有生命周期、发布状态、统一提交、公告与持久化节奏；`LauncherStore+Catalog`、`LauncherStore+Library`、`LauncherStore+Groups`、`LauncherStore+Canvas` 分别承载目录查询、应用放置、分组生命周期和画布导航命令，不拥有平行状态。
 - 所有可撤销命令都通过 `commitStateMutation` 原子提交完整 `PersistedState`，并由限长、值语义的 `LauncherStateHistory` 保存先前修订；不再把捕获 Store 与视图对象的闭包当作历史记录。
@@ -41,9 +53,10 @@ Catalog   Library   Groups   Canvas
 - `SearchViews` 独立承担搜索控件与结果组合；`AllAppsViews` 独立承担完整应用目录、筛选与显隐事务。分组和空间页面均按页面组合、分组容器、应用项与辅助控件拆分，跨文件只暴露组合所需的内部边界。多实例应用在通用图标项和搜索结果中都分行展示主名称与去除 `.app` 扩展名的实例来源，不把身份信息挤进窄小的单行标签。
 - 品牌身份分为两个明确边界：`AppIcon.icon` 仅供 Finder、Dock、Spotlight 与 App Store 使用；界面内统一使用 `ZizaiBrandMark`，只渲染紧凑裁切的透明四色前景，在浅色与深色外观中均不添加底面、材质、描边或阴影。
 - `InteractionGeometry` 负责输入手势与视口的纯计算；`SpatialLayoutEngine` 负责分组帧、应用网格、碰撞、尺寸映射与分组分离。指针操作、键盘/VoiceOver 自定义操作、迁移修复和测试共用这一套规则。
-- 空间视图在拖动期间只更新局部预览，释放时才执行完整碰撞解析和持久化。
-- 说明气泡使用不抢占焦点的顶层子窗口，不依赖列表、滚动区或卡片的局部层级；搜索或弹窗接管交互时会统一暂停、关闭并拒绝过期的异步气泡请求。
+- 空间视图的平移与缩放共用 `CanvasViewportInteractionSession`：世界层在不变基线上渲染，指针频率只更新外层合成变换，`CanvasEventView` 按当前屏幕刷新率合并滚轮和捏合输入，交互结束后向 `LauncherStore` 发布并保存一次。分组移动、尺寸调整和应用移动在拖动期间只更新局部预览，释放时才执行完整碰撞解析和持久化。图书馆拖动冻结观察几何，插入标记只更新渲染外观而不改变 `LazyVStack` 布局尺寸。
+- 说明气泡使用不抢占焦点的顶层子窗口，不依赖列表、滚动区或卡片的局部层级。`AppTooltipPanelController` 是渐显、渐隐、导航作废和锚点移动抑制的唯一生命周期所有者；窗口滚动或锚点布局一变化就先渐隐并解绑，直到指针离开原锚点才允许再次展示。搜索或弹窗接管交互时同样走这条统一的作废路径。
 - `Compatibility` 统一处理深浅色、降低动态效果、降低透明度及系统版本差异；视觉门槛除了分别渲染深浅外观，还会在同一持久窗口中执行深色到浅色切换，检查三个主页文字和底部控件的语义对比度。
+- 四种应用呈现（分组、空间、全部应用和搜索）共用 `ApplicationManagementViews`；`ApplicationManagementMotion` 只驱动有限的进入与退出过渡，稳定阶段不运行逐图标时间线或无限动画，避免真实应用目录密度下持续触发布局并饿死模态按钮的鼠标事件。`ApplicationManagementLifecycle` 统一处理空白点击、超时、导航、窗口和应用焦点边界；`ApplicationManagementChrome` 通过真实图标的 Anchor Preference 将白色删除控件定位在左上角，不依赖分组、卡片或画布的经验偏移。系统保护应用不显示删除控件；运行中拦截和第三方应用确认不会在各页面复制实现。
 
 ## 并发边界
 
@@ -55,7 +68,8 @@ Catalog   Library   Groups   Canvas
 ## 安全与隐私
 
 - App Sandbox 默认开启。
-- 额外应用目录只申请用户选择的只读权限，并使用 app-scoped security bookmark 跨重启恢复；不使用临时沙盒例外。
+- entitlement 使用标准的用户选择读写能力，不使用临时沙盒例外；额外目录的扫描书签仍显式带有只读限制，管理书签则只在用户确认移动应用时短暂启用。
+- 应用移除不提权、不强制结束进程、不直接永久删除，也不扫描或清理应用支持文件；系统应用和自在启动台自身在策略层直接阻断。
 - 应用不联网，不包含第三方追踪 SDK，不读取文稿、照片、通讯录或其他个人内容。
 - 登录项由用户主动开启，使用 `SMAppService.mainApp`，不安装额外 helper。
 

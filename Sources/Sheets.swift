@@ -204,7 +204,9 @@ struct HelpSheet: View {
                     Divider().padding(.leading, 46)
                     HelpRow(icon: "rectangle.3.group", title: "空间", detail: "拖动应用或分组自由摆放；拖动分组任意边缘缩放，空白处平移空间。")
                     Divider().padding(.leading, 46)
-                    HelpRow(icon: "square.grid.3x3", title: "全部应用", detail: "查看全部已安装应用，并决定哪些入口显示在空间和分组中；不会修改或卸载原应用。")
+                    HelpRow(
+                        icon: "square.grid.3x3", title: "全部应用",
+                        detail: "查看全部已安装应用，并决定哪些入口显示在空间和分组中。长按进入管理模式；可移除应用的图标左上角会显示白色删除按钮。")
                 }
                 .background(
                     Color.primary.opacity(ZizaiOpacity.panelFill),
@@ -230,7 +232,8 @@ struct HelpSheet: View {
                             .font(ZizaiTypography.sectionTitle)
                         Label("所有布局只保存在这台 Mac", systemImage: "lock.shield")
                         Label("移动、隐藏、改名都有撤销", systemImage: "arrow.uturn.backward")
-                        Label("不会修改或卸载任何原应用", systemImage: "checkmark.shield")
+                        Label("移除前确认，只把完整 .app 移到废纸篓", systemImage: "trash")
+                        Label("不会清理缓存、设置、文稿或账号", systemImage: "checkmark.shield")
                     }
                     .font(ZizaiTypography.secondary)
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -239,10 +242,12 @@ struct HelpSheet: View {
                 VStack(alignment: .leading, spacing: 10) {
                     Label("隐私说明", systemImage: "hand.raised.fill")
                         .font(ZizaiTypography.sectionTitle)
-                    Text("自在启动台不联网、不跟踪，也不收集、上传或共享个人数据。应用只读取“应用程序”目录中的应用名称、路径和图标；布局与界面偏好仅保存在本机沙盒中。")
-                        .font(ZizaiTypography.secondary)
-                        .foregroundStyle(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
+                    Text(
+                        "自在启动台不联网、不跟踪，也不收集、上传或共享个人数据。扫描只读取应用名称、路径和图标；只有你确认移除时，才使用你授予的文件夹权限把完整 .app 移到系统废纸篓。布局与界面偏好仅保存在本机沙盒中。"
+                    )
+                    .font(ZizaiTypography.secondary)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
                     Text("不需要辅助功能、输入监控、相机、麦克风、照片、通讯录或定位权限。")
                         .font(ZizaiTypography.secondary)
                         .foregroundStyle(.secondary)
@@ -278,13 +283,14 @@ private struct PrivacyPolicySheet: View {
                     VStack(alignment: .leading, spacing: 4) {
                         Text("隐私政策")
                             .font(ZizaiTypography.pageTitle)
-                        Text("更新日期：2026 年 8 月 22 日")
+                        Text("更新日期：2026 年 11 月 2 日")
                             .font(ZizaiTypography.secondary)
                             .foregroundStyle(.secondary)
                     }
                     Spacer()
                     Button("完成") { dismiss() }
                         .buttonStyle(.borderedProminent)
+                        .accessibilityIdentifier(ZizaiAccessibilityID.privacyPolicyDone)
                 }
 
                 PrivacySection(
@@ -292,8 +298,9 @@ private struct PrivacyPolicySheet: View {
                     detail: "自在启动台不收集、不上传、不出售、不共享任何个人数据，也不使用广告、分析、跟踪或第三方统计服务。"
                 )
                 PrivacySection(
-                    title: "只读取应用目录",
-                    detail: "应用只读取这台 Mac 上系统和用户“应用程序”目录中的应用名称、文件路径和图标，用于显示可启动的应用。这些信息不会离开你的设备。"
+                    title: "扫描只读，移除需确认",
+                    detail:
+                        "日常扫描只读取这台 Mac 上应用的名称、文件路径和图标。只有你长按应用、选择移除并确认后，才会在已授权文件夹中把完整 .app 移到系统废纸篓；不会清理缓存、设置、文稿或账号。这些信息不会离开你的设备。"
                 )
                 PrivacySection(
                     title: "设置只保存在本机",
@@ -382,9 +389,37 @@ struct GeneralSettingsView: View {
                         .fixedSize(horizontal: false, vertical: true)
                 }
             }
+
+            Section("应用管理") {
+                if let path = applicationFolderAccess.removalAuthorizationPath {
+                    LabeledContent("已授权位置") {
+                        Text(path)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                            .truncationMode(.middle)
+                            .help(path)
+                    }
+                    Text("仅在你确认把应用移到废纸篓时使用；扫描仍保持只读。")
+                        .foregroundStyle(.secondary)
+                    Button("移除应用管理授权", role: .destructive) {
+                        applicationFolderAccess.revokeRemovalAuthorization()
+                    }
+                } else {
+                    Text("首次移除第三方应用时，macOS 会要求你选择应用所在文件夹。授权不会让自在启动台清理缓存、设置、文稿或账号。")
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+
+                if let errorMessage = applicationFolderAccess.removalErrorMessage {
+                    Text(errorMessage)
+                        .font(.system(size: 12))
+                        .foregroundStyle(.red)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
         }
         .formStyle(.grouped)
-        .frame(width: 520, height: 390)
+        .frame(width: 540, height: 520)
         .fileImporter(
             isPresented: $isChoosingApplicationFolder,
             allowedContentTypes: [.folder],

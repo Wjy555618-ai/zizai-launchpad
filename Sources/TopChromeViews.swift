@@ -3,6 +3,7 @@ import SwiftUI
 
 struct LayoutModeSwitcherHost: View {
     @EnvironmentObject private var store: LauncherStore
+    @EnvironmentObject private var removalCoordinator: ApplicationRemovalCoordinator
     @ObservedObject var layoutModeController: LayoutModeController
     @Binding var isAllAppsOptionsPresented: Bool
     let reduceMotion: Bool
@@ -13,6 +14,11 @@ struct LayoutModeSwitcherHost: View {
                 get: { layoutModeController.selection },
                 set: { mode in
                     guard layoutModeController.selection != mode else { return }
+                    // Navigation is one transaction: release management input
+                    // ownership before changing the visible page. Deferring
+                    // this to an observer lets the window-level pointer-up
+                    // monitor consume the same click before the tab changes.
+                    removalCoordinator.endManagement(reason: .navigation)
                     isAllAppsOptionsPresented = false
                     zizaiAnimate(ZizaiMotion.selection, reduceMotion: reduceMotion) {
                         layoutModeController.selection = mode

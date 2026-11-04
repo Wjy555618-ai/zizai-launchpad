@@ -98,10 +98,10 @@ else
   pass "没有 App Sandbox 临时例外权限"
 fi
 
-if /usr/bin/grep -q "com.apple.security.files.user-selected.read-only" "$PROJECT_DIR/Resources/ZizaiLaunchpad.entitlements"; then
-  pass "用户应用文件夹使用标准的用户选择只读权限"
+if /usr/bin/grep -q "com.apple.security.files.user-selected.read-write" "$PROJECT_DIR/Resources/ZizaiLaunchpad.entitlements"; then
+  pass "应用管理使用标准的用户选择读写权限，扫描书签仍限制为只读"
 else
-  block "缺少用户选择只读权限，无法在沙盒中恢复用户应用文件夹"
+  block "缺少用户选择读写权限，沙盒内无法把用户确认的应用移到废纸篓"
 fi
 
 if /usr/bin/python3 "$PROJECT_DIR/scripts/verify_security_capabilities.py" >/dev/null; then

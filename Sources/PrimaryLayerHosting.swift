@@ -1,6 +1,31 @@
 import AppKit
 import SwiftUI
 
+private struct PrimaryLayerIsActiveEnvironmentKey: EnvironmentKey {
+    static let defaultValue = true
+}
+
+extension EnvironmentValues {
+    var primaryLayerIsActive: Bool {
+        get { self[PrimaryLayerIsActiveEnvironmentKey.self] }
+        set { self[PrimaryLayerIsActiveEnvironmentKey.self] = newValue }
+    }
+}
+
+@MainActor
+private final class PrimaryLayerActivity: ObservableObject {
+    @Published var isActive = false
+}
+
+private struct PrimaryLayerRoot<Content: View>: View {
+    let content: Content
+    @ObservedObject var activity: PrimaryLayerActivity
+
+    var body: some View {
+        content.environment(\.primaryLayerIsActive, activity.isActive)
+    }
+}
+
 @MainActor
 protocol LayoutModeSelectionObserver: AnyObject {
     func layoutModeSelectionDidChange(_ selection: LayoutMode)
@@ -30,7 +55,8 @@ final class LayoutModeController: ObservableObject {
 }
 
 final class PrimaryLayerContainer<Content: View>: NSView, LayoutModeSelectionObserver {
-    private let hostingView: NSHostingView<Content>
+    private let activity = PrimaryLayerActivity()
+    private let hostingView: NSHostingView<PrimaryLayerRoot<Content>>
     private let mode: LayoutMode
     private(set) var revision: String
     private var colorScheme: ColorScheme
@@ -50,7 +76,9 @@ final class PrimaryLayerContainer<Content: View>: NSView, LayoutModeSelectionObs
         revision: String,
         colorScheme: ColorScheme
     ) {
-        hostingView = NSHostingView(rootView: content)
+        hostingView = NSHostingView(
+            rootView: PrimaryLayerRoot(content: content, activity: activity)
+        )
         self.mode = mode
         self.revision = revision
         self.colorScheme = colorScheme
@@ -86,7 +114,7 @@ final class PrimaryLayerContainer<Content: View>: NSView, LayoutModeSelectionObs
 
         self.revision = revision
         self.colorScheme = colorScheme
-        hostingView.rootView = content
+        hostingView.rootView = PrimaryLayerRoot(content: content, activity: activity)
         if appearanceChanged {
             synchronizeHostedAppearance()
         }
@@ -151,6 +179,17 @@ final class PrimaryLayerContainer<Content: View>: NSView, LayoutModeSelectionObs
         usesLayerVisibility: Bool
     ) {
         acceptsInteraction = isActive
+        if activity.isActive != isActive {
+            // `updateNSView` runs inside SwiftUI's reconciliation pass. Publish
+            // the page-activity boundary on the next main turn so descendants
+            // can stop transient effects without mutating observable state from
+            // inside that same pass. The interaction flag rejects stale queued
+            // values when prewarm or rapid navigation changes again first.
+            DispatchQueue.main.async { [weak self] in
+                guard let self, self.acceptsInteraction == isActive else { return }
+                self.activity.isActive = isActive
+            }
+        }
         // Keep inactive hosts paintable only during the one-time prewarm. Once
         // parkedOpacity reaches zero, the lightweight outer layer is the
         // single source of truth for painting. The NSView remains mounted and
