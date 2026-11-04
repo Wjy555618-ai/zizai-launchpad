@@ -38,7 +38,7 @@ enum TooltipLayeringAudit {
         require(centered(firstPanel, above: firstAnchor, in: window), "气泡未对齐到所属图标上方")
 
         AppTooltipPanelController.shared.setPresentationEnabled(false)
-        settle()
+        settleUntil { window.childWindows?.isEmpty != false }
         require(window.childWindows?.isEmpty != false, "搜索或导航切换后气泡未立即收起")
         require(!firstPanel.isVisible, "禁用气泡展示后子窗口仍可见")
 
@@ -68,7 +68,7 @@ enum TooltipLayeringAudit {
 
         AppTooltipPanelController.shared.handleViewportMovement()
         require(secondPanel.isVisible, "滚动开始时气泡被硬切，没有执行渐隐")
-        settle()
+        settleUntil { window.childWindows?.isEmpty != false }
         require(window.childWindows?.isEmpty != false, "内容滚动后气泡仍停在旧屏幕坐标")
         require(!secondPanel.isVisible, "内容滚动后气泡窗口仍可见")
 
@@ -90,7 +90,7 @@ enum TooltipLayeringAudit {
         require(window.childWindows?.first === secondPanel, "重新移入后气泡没有恢复")
 
         AppTooltipPanelController.shared.hide(id: "second")
-        settle()
+        settleUntil { window.childWindows?.isEmpty != false }
         require(window.childWindows?.isEmpty != false, "离开图标后气泡子窗口没有收起")
         require(!secondPanel.isVisible, "离开图标后气泡仍可见")
 
@@ -105,6 +105,22 @@ enum TooltipLayeringAudit {
 
     private static func settle() {
         RunLoop.current.run(until: Date().addingTimeInterval(0.12))
+    }
+
+    /// AppKit guarantees the animation's duration, not the exact scheduling
+    /// latency of its completion handler. Wait for the observable lifecycle
+    /// result with a bounded deadline instead of guessing one runner-specific
+    /// amount of slack after the fade duration.
+    private static func settleUntil(
+        timeout: TimeInterval = 0.5,
+        _ condition: () -> Bool
+    ) {
+        let deadline = Date().addingTimeInterval(timeout)
+        while !condition(), Date() < deadline {
+            RunLoop.current.run(
+                until: min(deadline, Date().addingTimeInterval(0.01))
+            )
+        }
     }
 
     private static func require(_ condition: @autoclosure () -> Bool, _ message: String) {
