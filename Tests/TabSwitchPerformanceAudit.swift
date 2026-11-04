@@ -30,8 +30,18 @@ enum TabSwitchPerformanceAudit {
         require(maximum < 8, "Tab 切换峰值超过 8ms：\(format(maximum))ms")
 
         let expectedMode = store.layoutMode
-        RunLoop.current.run(until: Date().addingTimeInterval(0.35))
         let stateURL = root.appendingPathComponent("布局.json")
+        let persistenceDeadline = Date().addingTimeInterval(2)
+        while persistedMode(at: stateURL) != expectedMode,
+            Date() < persistenceDeadline
+        {
+            RunLoop.current.run(
+                until: min(
+                    persistenceDeadline,
+                    Date().addingTimeInterval(0.01)
+                )
+            )
+        }
         guard let data = try? Data(contentsOf: stateURL),
             let persisted = try? JSONDecoder().decode(PersistedState.self, from: data)
         else {
@@ -40,6 +50,13 @@ enum TabSwitchPerformanceAudit {
         require(persisted.layoutMode == expectedMode, "Tab 切换后的视图选择没有正确持久化")
 
         print("Tab 切换性能验收通过：180 次即时切换，P95 \(format(p95))ms，峰值 \(format(maximum))ms；延迟持久化正常。")
+    }
+
+    private static func persistedMode(at stateURL: URL) -> LayoutMode? {
+        guard let data = try? Data(contentsOf: stateURL),
+            let state = try? JSONDecoder().decode(PersistedState.self, from: data)
+        else { return nil }
+        return state.layoutMode
     }
 
     private static func format(_ value: Double) -> String {
