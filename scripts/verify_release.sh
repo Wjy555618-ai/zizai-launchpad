@@ -39,7 +39,7 @@ if [[ "$VALIDATION_STAGE" == "all" || "$VALIDATION_STAGE" == "core" ]]; then
   /bin/zsh "$PROJECT_DIR/scripts/verify_release_core.sh" "$VALIDATION_PROFILE"
 fi
 if [[ "$VALIDATION_STAGE" == "all" || "$VALIDATION_STAGE" == "runtime" ]]; then
-  /bin/zsh "$PROJECT_DIR/scripts/verify_release_runtime.sh"
+  /bin/zsh "$PROJECT_DIR/scripts/verify_release_runtime.sh" "$VALIDATION_PROFILE"
 fi
 
 # Repository hygiene is part of the same release contract. Keep it in the
